@@ -1,7 +1,7 @@
 const DB_NAME = 'glow-bela-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
-const STORES = ['products', 'customers', 'sales', 'settings'] as const;
+const STORES = ['products', 'customers', 'sales', 'settings', 'orders'] as const;
 type StoreName = typeof STORES[number];
 
 function openDB(): Promise<IDBDatabase> {

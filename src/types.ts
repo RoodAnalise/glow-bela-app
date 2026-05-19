@@ -22,9 +22,10 @@ export interface Customer {
   phone: string;
   email?: string;
   address?: string;
+  source?: 'store' | 'manual';
 }
 
-export type PaymentMethod = 'cash' | 'credit_card' | 'installments' | 'store_credit';
+export type PaymentMethod = 'cash' | 'credit_card' | 'installments' | 'store_credit' | 'pix';
 
 export interface SaleItem {
   productId: string;
@@ -51,9 +52,34 @@ export interface Sale {
   createdAt: number;
 }
 
+export interface OrderItem {
+  productId: string;
+  name: string;
+  quantity: number;
+  price: number;
+  originalPrice: number;
+  discountPercent: number;
+  imageUrl?: string;
+}
+
+export interface Order {
+  id?: string;
+  customerName: string;
+  customerPhone: string;
+  items: OrderItem[];
+  totalAmount: number;
+  discountAmount: number;
+  paymentMethod: string;
+  notes?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  createdAt: number;
+}
+
 export interface Settings {
   id?: string;
   defaultMarkup: number;
   storeName: string;
   currency: string;
+  whatsappNumber?: string;
+  storeDescription?: string;
 }

@@ -11,7 +11,9 @@ import {
   X,
   Sparkles,
   LogOut,
-  Lock
+  Lock,
+  ClipboardList,
+  MessageCircle
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
@@ -30,8 +32,9 @@ import CustomersView from './views/CustomersView';
 import POSView from './views/POSView';
 import ReportsView from './views/ReportsView';
 import StorefrontView from './views/StorefrontView';
+import OrdersView from './views/OrdersView';
 
-type View = 'dashboard' | 'inventory' | 'customers' | 'pos' | 'reports' | 'store';
+type View = 'dashboard' | 'inventory' | 'customers' | 'pos' | 'reports' | 'store' | 'orders';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -77,49 +80,174 @@ export default function App() {
     );
   }
 
+  const loginPhrases = [
+    "Sua beleza e sua forca. 💫",
+    "Cada detalhe importa quando o assunto e voce. ✨",
+    "Descubra o poder de se sentir unica. 🌸",
+    "Beleza que inspira confianca. 💎",
+    "O cuidado que voce merece, a qualidade que voce merece. 🌹",
+    "Transforme sua rotina de beleza em um ritual de amor proprio. 💖",
+    "Porque voce merece brilhar todos os dias. ⭐",
+    "Cosmeticos que contam a sua historia. 🦋"
+  ];
+  const [currentPhrase, setCurrentPhrase] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPhrase((prev) => (prev + 1) % loginPhrases.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   if (currentView !== 'store' && !loggedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-offwhite p-6">
-        <Toaster position="top-right" />
-        <Card className="w-full max-w-md border-none shadow-luxury rounded-3xl overflow-hidden bg-white">
-          <div className="h-2 bg-gradient-to-r from-brand-primary to-brand-soft" />
-          <CardContent className="p-8 text-center flex flex-col items-center">
-            <div className="w-16 h-16 rounded-2xl bg-brand-blush flex items-center justify-center text-brand-primary mb-6">
-              <Lock size={32} />
-            </div>
-            <h1 className="text-2xl font-bold text-brand-ink mb-2">Acesso Restrito</h1>
-            <p className="text-brand-metallic mb-8">Esta area e exclusiva para administradores da Glow Bela.</p>
-            
-            <div className="space-y-4 w-full">
-              <div className="grid gap-2">
-                <Label htmlFor="password" className="text-left text-[10px] uppercase font-black text-brand-metallic tracking-widest">Senha Admin</Label>
-                <Input 
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                  placeholder="Digite a senha"
-                  className="h-12 rounded-xl border-brand-nude bg-brand-offwhite/50 focus-visible:ring-brand-primary"
-                />
-                {loginError && <p className="text-red-500 text-xs">{loginError}</p>}
+      <div className="min-h-screen flex flex-col lg:flex-row bg-brand-offwhite">
+        {/* Left Side - Branding & Phrases */}
+        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-brand-blush via-brand-soft/30 to-brand-primary/20 p-12 flex-col justify-between">
+          <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-brand-primary/10 blur-3xl" />
+          <div className="absolute -bottom-20 -right-20 w-96 h-96 rounded-full bg-brand-soft/10 blur-3xl" />
+          
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center text-brand-primary shadow-lg">
+                <Sparkles size={28} />
               </div>
-              <Button 
-                onClick={handleLogin} 
-                className="w-full h-12 bg-brand-primary hover:bg-brand-primary/90 text-white rounded-xl font-bold flex items-center justify-center gap-3 shadow-md"
-              >
-                Entrar
-              </Button>
-              <Button 
-                variant="ghost" 
-                onClick={() => setCurrentView('store')}
-                className="w-full text-brand-metallic hover:text-brand-primary"
-              >
-                Ver a Loja Online
-              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-brand-primary font-serif italic">Glow Bela</h1>
+                <p className="text-xs text-brand-metallic font-medium tracking-wider uppercase">Cosmetics & Management</p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <div className="relative z-10 space-y-6">
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={currentPhrase}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5 }}
+                className="text-3xl font-serif italic text-brand-ink leading-relaxed"
+              >
+                {loginPhrases[currentPhrase]}
+              </motion.p>
+            </AnimatePresence>
+            <div className="flex gap-2">
+              {loginPhrases.map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "h-1 rounded-full transition-all duration-500",
+                    i === currentPhrase ? "w-8 bg-brand-primary" : "w-4 bg-brand-nude/40"
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="relative z-10">
+            <p className="text-sm text-brand-metallic font-medium">
+              ✨ Mais de 500 clientes satisfeitas
+            </p>
+            <div className="flex -space-x-2 mt-3">
+              {[1,2,3,4,5].map(i => (
+                <div key={i} className="w-8 h-8 rounded-full bg-white/60 border-2 border-white flex items-center justify-center text-xs">
+                  {['💖','🌸','✨','💎','🌹'][i-1]}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Login Form */}
+        <div className="flex-1 flex items-center justify-center p-6 sm:p-8">
+          <div className="w-full max-w-md">
+            {/* Mobile Logo */}
+            <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-brand-blush flex items-center justify-center text-brand-primary">
+                <Sparkles size={24} />
+              </div>
+              <h1 className="text-2xl font-bold text-brand-primary font-serif italic">Glow Bela</h1>
+            </div>
+
+            {/* Rotating Phrase (Mobile) */}
+            <div className="lg:hidden mb-8 text-center">
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={currentPhrase}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.4 }}
+                  className="text-lg font-serif italic text-brand-metallic"
+                >
+                  {loginPhrases[currentPhrase]}
+                </motion.p>
+              </AnimatePresence>
+            </div>
+
+            <Card className="border-none shadow-luxury rounded-3xl overflow-hidden bg-white">
+              <div className="h-2 bg-gradient-to-r from-brand-primary via-brand-soft to-brand-blush" />
+              <CardContent className="p-8 text-center space-y-6">
+                <div className="w-16 h-16 rounded-2xl bg-brand-blush/50 flex items-center justify-center text-brand-primary mx-auto">
+                  <Lock size={28} strokeWidth={1.5} />
+                </div>
+                
+                <div>
+                  <h2 className="text-xl font-bold text-brand-ink font-serif italic">Area Administrativa</h2>
+                  <p className="text-sm text-brand-metallic mt-1">Acesso exclusivo para gestores da Glow Bela</p>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="password" className="text-left text-[10px] uppercase font-black text-brand-metallic tracking-widest">Senha Admin</Label>
+                    <Input 
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); setLoginError(''); }}
+                      onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                      placeholder="Digite a senha de acesso"
+                      className="h-14 rounded-xl border-brand-nude bg-brand-offwhite/50 focus-visible:ring-brand-primary text-center tracking-widest"
+                    />
+                    {loginError && (
+                      <motion.p 
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-red-500 text-xs font-medium"
+                      >
+                        {loginError}
+                      </motion.p>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={handleLogin} 
+                    className="w-full h-14 bg-brand-primary hover:bg-brand-primary/90 text-white rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-brand-primary/20 transition-all active:scale-[0.98]"
+                  >
+                    <Lock size={18} />
+                    Acessar Painel
+                  </Button>
+                </div>
+
+                <Separator className="bg-brand-nude/30" />
+
+                <div className="space-y-3">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setCurrentView('store')}
+                    className="w-full text-brand-metallic hover:text-brand-primary hover:bg-brand-blush/30 h-12 rounded-xl font-medium"
+                  >
+                    <ShoppingCart size={18} className="mr-2" />
+                    Ver a Loja Online
+                  </Button>
+                  <p className="text-[10px] text-brand-metallic/60">
+                    E cliente? Explore nossos produtos exclusivos ✨
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -129,6 +257,7 @@ export default function App() {
   const navItems = [
     { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
     { id: 'pos', label: 'Nova Venda', icon: ShoppingCart },
+    { id: 'orders', label: 'Pedidos Online', icon: ClipboardList },
     { id: 'inventory', label: 'Estoque', icon: Package },
     { id: 'customers', label: 'Clientes', icon: Users },
     { id: 'reports', label: 'Relatorios', icon: BarChart3 },
@@ -141,6 +270,7 @@ export default function App() {
       case 'inventory': return <InventoryView />;
       case 'customers': return <CustomersView />;
       case 'pos': return <POSView />;
+      case 'orders': return <OrdersView />;
       case 'reports': return <ReportsView />;
       case 'store': return <StorefrontView />;
       default: return <DashboardView onNavigate={setCurrentView} />;

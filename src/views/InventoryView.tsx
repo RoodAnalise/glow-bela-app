@@ -262,6 +262,17 @@ export default function InventoryView() {
                     className="h-12 rounded-xl border-brand-nude bg-brand-offwhite/50 focus-visible:ring-brand-primary" 
                   />
                 </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="whatsapp" className="text-[10px] uppercase font-black text-brand-metallic tracking-widest">WhatsApp da Loja</Label>
+                  <Input 
+                    id="whatsapp" 
+                    value={settings.whatsappNumber || ''} 
+                    onChange={(e) => setSettings({...settings, whatsappNumber: e.target.value})} 
+                    placeholder="5511999999999"
+                    className="h-12 rounded-xl border-brand-nude bg-brand-offwhite/50 focus-visible:ring-brand-primary" 
+                  />
+                  <p className="text-[10px] text-brand-metallic">Numero com DDI e DDD (ex: 5511999999999)</p>
+                </div>
               </div>
               <DialogFooter className="mt-6 gap-3">
                 <Button variant="ghost" onClick={() => setIsSettingsOpen(false)} className="rounded-xl text-brand-metallic hover:text-brand-ink uppercase text-[10px] font-black tracking-widest">Cancelar</Button>

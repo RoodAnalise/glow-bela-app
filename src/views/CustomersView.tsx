@@ -9,7 +9,8 @@ import {
   MoreVertical,
   Edit2,
   Trash2,
-  Users
+  Users,
+  MessageCircle
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,6 +101,12 @@ export default function CustomersView() {
     setEditingCustomer(customer);
     setFormData(customer);
     setIsModalOpen(true);
+  };
+
+  const openWhatsApp = (phone: string, name: string) => {
+    const cleanPhone = phone.replace(/\D/g, '');
+    const message = encodeURIComponent(`Ola ${name}! Aqui e da equipe Glow Bela. ✨`);
+    window.open(`https://wa.me/55${cleanPhone}?text=${message}`, '_blank');
   };
 
   const filteredCustomers = customers.filter(c => 
@@ -236,6 +243,9 @@ export default function CustomersView() {
                   </TableCell>
                   <TableCell className="text-right px-8">
                     <div className="flex justify-end gap-3 opacity-30 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-green-600 hover:bg-green-50" onClick={() => openWhatsApp(customer.phone, customer.name)}>
+                        <MessageCircle size={18} strokeWidth={1.5} />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-brand-metallic hover:text-brand-primary hover:bg-brand-blush" onClick={() => startEdit(customer)}>
                         <Edit2 size={18} strokeWidth={1.5} />
                       </Button>
