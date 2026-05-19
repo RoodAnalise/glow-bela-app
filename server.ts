@@ -4,6 +4,12 @@ import fs from "fs";
 
 async function startServer() {
   const app = express();
+  
+  // Garante que rode em produção se não estiver definido
+  if (!process.env.NODE_ENV) {
+    process.env.NODE_ENV = 'production';
+  }
+
   const PORT = process.env.PORT || 3000;
 
   app.use(express.json());
