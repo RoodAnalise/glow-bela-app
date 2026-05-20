@@ -3,8 +3,10 @@ services:
     name: glow-bela
     env: node
     plan: free
-    buildCommand: rm -rf node_modules/.vite dist && npm install && npm run build
+    buildCommand: rm -rf node_modules/.vite node_modules/.cache dist && npm ci && npm run build
     startCommand: node dist/server.cjs
     envVars:
       - key: NODE_ENV
         value: production
+      - key: VITE_BUILD_HASH
+        value: glow-bella-2026
