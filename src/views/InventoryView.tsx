@@ -39,6 +39,7 @@ import { Product, Settings } from "@/src/types";
 import { useLocalDB } from '@/src/lib/useLocalDB';
 import { cn } from "@/lib/utils";
 import AISocialMedia from '@/src/components/AISocialMedia';
+import { analyzeProductImage, isAIConfigured } from '@/src/lib/gemini';
 
 const DEFAULT_SETTINGS: Settings = {
   id: 'global',
@@ -88,6 +89,7 @@ export default function InventoryView() {
     imageUrl: ''
   });
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -129,14 +131,35 @@ export default function InventoryView() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const result = reader.result as string;
         setImagePreview(result);
         setFormData({ ...formData, imageUrl: result });
+
+        if (isAIConfigured() && !editingProduct) {
+          setAiAnalyzing(true);
+          try {
+            const analysis = await analyzeProductImage(result);
+            if (analysis.name) {
+              setFormData(prev => ({
+                ...prev,
+                name: analysis.name,
+                category: analysis.category,
+                description: analysis.description,
+                imageUrl: result
+              }));
+              toast.success('Produto identificado pela IA!');
+            }
+          } catch (err) {
+            console.error('AI analysis error:', err);
+          } finally {
+            setAiAnalyzing(false);
+          }
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -311,6 +334,11 @@ export default function InventoryView() {
                     {imagePreview ? (
                       <div className="relative w-28 h-28 rounded-2xl overflow-hidden border-2 border-brand-nude group">
                         <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                        {aiAnalyzing && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <div className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full" />
+                          </div>
+                        )}
                         <button
                           onClick={removeImage}
                           className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -323,8 +351,14 @@ export default function InventoryView() {
                         onClick={() => fileInputRef.current?.click()}
                         className="w-28 h-28 rounded-2xl border-2 border-dashed border-brand-nude bg-brand-offwhite/50 flex flex-col items-center justify-center gap-1 hover:border-brand-primary hover:bg-brand-blush/30 transition-all cursor-pointer"
                       >
-                        <ImagePlus size={24} className="text-brand-metallic/50" />
-                        <span className="text-[8px] uppercase font-black text-brand-metallic/50 tracking-wider">Upload</span>
+                        {aiAnalyzing ? (
+                          <div className="animate-spin w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full" />
+                        ) : (
+                          <>
+                            <ImagePlus size={24} className="text-brand-metallic/50" />
+                            <span className="text-[8px] uppercase font-black text-brand-metallic/50 tracking-wider">Upload</span>
+                          </>
+                        )}
                       </button>
                     )}
                     <input
@@ -334,6 +368,12 @@ export default function InventoryView() {
                       onChange={handleImageChange}
                       className="hidden"
                     />
+                    {isAIConfigured() && (
+                      <p className="text-[7px] text-brand-primary/60 mt-1 flex items-center gap-0.5 font-medium">
+                        <Sparkles size={8} />
+                        IA auto-preenche
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex-1 space-y-4">
