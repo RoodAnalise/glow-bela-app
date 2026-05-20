@@ -7,11 +7,11 @@ export interface BrandColors {
 }
 
 export const GLOW_BELA_COLORS: BrandColors = {
-  primary: '#B86579',
-  secondary: '#D4A5AA',
-  accent: '#E6B8C2',
-  background: '#E8E0DE',
-  text: '#1E1E1E',
+  primary: '#D4849A',
+  secondary: '#E8B4C8',
+  accent: '#F2D1D9',
+  background: '#FAF5F3',
+  text: '#1A1A1A',
 };
 
 export type PostFormat = 'story' | 'feed';
@@ -114,7 +114,7 @@ export function generatePostImage(
     ctx.fillStyle = colors.primary;
     ctx.font = `bold ${width * 0.04}px serif`;
     ctx.textAlign = 'center';
-    ctx.fillText('✨ GLOW BELA', width / 2, logoY + width * 0.04);
+    ctx.fillText('✨ GLOW BELLA', width / 2, logoY + width * 0.04);
 
     // Category badge
     const badgeY = imgY + imgSize + width * 0.05;
@@ -227,40 +227,42 @@ export function enhanceProductImage(imageBase64: string): Promise<string> {
       canvas.height = size;
       const ctx = canvas.getContext('2d')!;
 
-      // Background gradient (Glow Bela brand)
-      const bgGradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size * 0.7);
-      bgGradient.addColorStop(0, '#FFF5F7');
-      bgGradient.addColorStop(0.5, '#F8E8EC');
-      bgGradient.addColorStop(1, '#E8D5DA');
+      // Background gradient (Glow Bella brand - clean and sophisticated)
+      const bgGradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size * 0.75);
+      bgGradient.addColorStop(0, '#FFFFFF');
+      bgGradient.addColorStop(0.6, '#FFF5F7');
+      bgGradient.addColorStop(1, '#F2D1D9');
       ctx.fillStyle = bgGradient;
       ctx.fillRect(0, 0, size, size);
 
-      // Decorative circles
-      ctx.globalAlpha = 0.08;
-      ctx.fillStyle = '#B86579';
+      // Decorative circles (delicate and elegant)
+      ctx.globalAlpha = 0.06;
+      ctx.fillStyle = '#D4849A';
       ctx.beginPath();
-      ctx.arc(size * 0.85, size * 0.15, size * 0.35, 0, Math.PI * 2);
+      ctx.arc(size * 0.88, size * 0.12, size * 0.3, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(size * 0.12, size * 0.88, size * 0.28, 0, Math.PI * 2);
+      ctx.arc(size * 0.1, size * 0.9, size * 0.25, 0, Math.PI * 2);
       ctx.fill();
+      ctx.globalAlpha = 0.04;
+      ctx.fillStyle = '#C9A96E';
       ctx.beginPath();
-      ctx.arc(size * 0.75, size * 0.82, size * 0.15, 0, Math.PI * 2);
+      ctx.arc(size * 0.78, size * 0.85, size * 0.18, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
 
       // Product image area (centered, with padding)
-      const padding = size * 0.12;
+      const padding = size * 0.1;
       const imgAreaSize = size - padding * 2;
 
-      // Shadow for product image
-      ctx.shadowColor = 'rgba(184, 101, 121, 0.25)';
-      ctx.shadowBlur = 30;
+      // Soft shadow for product image
+      ctx.shadowColor = 'rgba(212, 132, 154, 0.2)';
+      ctx.shadowBlur = 35;
       ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 8;
+      ctx.shadowOffsetY = 10;
 
       // Rounded rectangle clip for product
-      const radius = imgAreaSize * 0.06;
+      const radius = imgAreaSize * 0.08;
       const imgX = padding;
       const imgY = padding;
 
@@ -288,8 +290,8 @@ export function enhanceProductImage(imageBase64: string): Promise<string> {
       const drawX = imgX + (imgAreaSize - scaledW) / 2;
       const drawY = imgY + (imgAreaSize - scaledH) / 2;
 
-      // Apply slight brightness/contrast enhancement
-      ctx.filter = 'brightness(1.05) contrast(1.02) saturate(1.08)';
+      // Apply brightness/contrast/saturation enhancement
+      ctx.filter = 'brightness(1.08) contrast(1.03) saturate(1.1)';
       ctx.drawImage(img, drawX, drawY, scaledW, scaledH);
       ctx.filter = 'none';
 
@@ -297,8 +299,8 @@ export function enhanceProductImage(imageBase64: string): Promise<string> {
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
 
-      // Border around product area
-      ctx.strokeStyle = '#D4A5AA';
+      // Gold border around product area
+      ctx.strokeStyle = '#C9A96E';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(imgX + radius, imgY);
@@ -314,9 +316,9 @@ export function enhanceProductImage(imageBase64: string): Promise<string> {
       ctx.stroke();
 
       // Inner subtle border
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.strokeStyle = 'rgba(212, 132, 154, 0.3)';
       ctx.lineWidth = 1;
-      const innerOffset = 4;
+      const innerOffset = 5;
       ctx.beginPath();
       ctx.moveTo(imgX + radius + innerOffset, imgY + innerOffset);
       ctx.lineTo(imgX + imgAreaSize - radius - innerOffset, imgY + innerOffset);
@@ -330,32 +332,39 @@ export function enhanceProductImage(imageBase64: string): Promise<string> {
       ctx.closePath();
       ctx.stroke();
 
-      // Glow Bela watermark
-      ctx.fillStyle = 'rgba(184, 101, 121, 0.15)';
-      ctx.font = 'bold 28px serif';
+      // Glow Bella watermark (elegant, gold)
+      ctx.fillStyle = 'rgba(201, 169, 110, 0.25)';
+      ctx.font = 'italic bold 30px serif';
       ctx.textAlign = 'center';
-      ctx.fillText('✨ GLOW BELA', size / 2, size - 30);
+      ctx.fillText('✨ GLOW BELLA', size / 2, size - 28);
 
-      // Decorative sparkles
-      ctx.globalAlpha = 0.4;
-      ctx.fillStyle = '#B86579';
-      drawSparkle(ctx, size * 0.08, size * 0.12, 12);
-      drawSparkle(ctx, size * 0.92, size * 0.25, 10);
-      drawSparkle(ctx, size * 0.15, size * 0.78, 8);
-      drawSparkle(ctx, size * 0.88, size * 0.72, 14);
+      // Decorative sparkles and delicate elements
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = '#D4849A';
+      drawSparkle(ctx, size * 0.08, size * 0.1, 14);
+      drawSparkle(ctx, size * 0.92, size * 0.22, 11);
+      drawSparkle(ctx, size * 0.15, size * 0.8, 9);
+      drawSparkle(ctx, size * 0.88, size * 0.75, 13);
+      ctx.globalAlpha = 0.2;
+      ctx.fillStyle = '#C9A96E';
+      drawSparkle(ctx, size * 0.5, size * 0.04, 10);
+      drawSparkle(ctx, size * 0.75, size * 0.15, 8);
       ctx.globalAlpha = 1;
 
-      // Small decorative dots
-      ctx.globalAlpha = 0.2;
-      ctx.fillStyle = '#D4A5AA';
+      // Small decorative dots (delicate)
+      ctx.globalAlpha = 0.15;
+      ctx.fillStyle = '#D4849A';
       ctx.beginPath();
-      ctx.arc(size * 0.05, size * 0.5, 4, 0, Math.PI * 2);
+      ctx.arc(size * 0.04, size * 0.5, 4, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(size * 0.95, size * 0.45, 3, 0, Math.PI * 2);
+      ctx.arc(size * 0.96, size * 0.48, 3, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(size * 0.5, size * 0.05, 5, 0, Math.PI * 2);
+      ctx.arc(size * 0.5, size * 0.06, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(size * 0.3, size * 0.92, 3, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
 

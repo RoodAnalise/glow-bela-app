@@ -1,7 +1,7 @@
 {
-  "name": "Glow Bela - Cosmetics & Management",
-  "short_name": "Glow Bela",
-  "description": "Sistema de gestao e venda de cosmeticos Glow Bela",
+  "name": "Glow Bella - Cosmetics & Management",
+  "short_name": "Glow Bella",
+  "description": "Sistema de gestao e venda de cosmeticos Glow Bella",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#E8E0DE",

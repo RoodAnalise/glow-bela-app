@@ -60,7 +60,7 @@ export default function InstallPrompt() {
               <Sparkles size={20} />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-bold text-brand-ink font-serif italic">Instalar Glow Bela</h4>
+              <h4 className="text-sm font-bold text-brand-ink font-serif italic">Instalar Glow Bella</h4>
               <p className="text-xs text-brand-metallic mt-0.5">Acesse rapidamente direto da sua tela inicial</p>
             </div>
             <button

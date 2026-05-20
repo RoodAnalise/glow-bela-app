@@ -1,6 +1,6 @@
 {
-  "name": "Glow Bela - Cosmetics & Management",
-  "description": "Plataforma completa para a loja Glow Bela: Vendas online, controle de estoque com cálculo de margem de lucro, cadastro de clientes e relatórios financeiros.",
+  "name": "Glow Bella - Cosmetics & Management",
+  "description": "Plataforma completa para a loja Glow Bella: Vendas online, controle de estoque com cálculo de margem de lucro, cadastro de clientes e relatórios financeiros.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -70,14 +70,14 @@ export default function App() {
   };
 
   const loginPhrases = [
-    "Sua beleza e sua forca. 💫",
-    "Cada detalhe importa quando o assunto e voce. ✨",
-    "Descubra o poder de se sentir unica. 🌸",
-    "Beleza que inspira confianca. 💎",
-    "O cuidado que voce merece, a qualidade que voce merece. 🌹",
-    "Transforme sua rotina de beleza em um ritual de amor proprio. 💖",
-    "Porque voce merece brilhar todos os dias. ⭐",
-    "Cosmeticos que contam a sua historia. 🦋"
+    "Seu momento de cuidado diário. 💫",
+    "Cuidado que realça sua beleza. ✨",
+    "Beleza acessível com toque sofisticado. 🌸",
+    "Glow Bella — brilho, cuidado e autoestima. 💎",
+    "Cada detalhe importa quando o assunto é você. 🌹",
+    "Transforme sua rotina em um ritual de amor próprio. 💖",
+    "Porque você merece brilhar todos os dias. ⭐",
+    "Cosméticos que contam a sua história. 🦋"
   ];
   const [currentPhrase, setCurrentPhrase] = useState(0);
 
@@ -113,7 +113,7 @@ export default function App() {
                 <Sparkles size={28} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-brand-primary font-serif italic">Glow Bela</h1>
+                <h1 className="text-2xl font-bold text-brand-primary font-serif italic">Glow Bella</h1>
                 <p className="text-xs text-brand-metallic font-medium tracking-wider uppercase">Cosmetics & Management</p>
               </div>
             </div>
@@ -167,7 +167,7 @@ export default function App() {
               <div className="w-12 h-12 rounded-2xl bg-brand-blush flex items-center justify-center text-brand-primary">
                 <Sparkles size={24} />
               </div>
-              <h1 className="text-2xl font-bold text-brand-primary font-serif italic">Glow Bela</h1>
+              <h1 className="text-2xl font-bold text-brand-primary font-serif italic">Glow Bella</h1>
             </div>
 
             {/* Rotating Phrase (Mobile) */}
@@ -195,7 +195,7 @@ export default function App() {
                 
                 <div>
                   <h2 className="text-xl font-bold text-brand-ink font-serif italic">Area Administrativa</h2>
-                  <p className="text-sm text-brand-metallic mt-1">Acesso exclusivo para gestores da Glow Bela</p>
+                  <p className="text-sm text-brand-metallic mt-1">Acesso exclusivo para gestores da Glow Bella</p>
                 </div>
                 
                 <div className="space-y-4">
@@ -303,9 +303,9 @@ export default function App() {
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-primary to-brand-soft flex items-center justify-center text-white shadow-sm">
                 <Sparkles size={20} />
               </div>
-              <h1 className="text-xl font-bold tracking-tight text-brand-primary font-serif">
-                Glow Bela
-              </h1>
+                <h1 className="text-xl font-bold tracking-tight text-brand-primary font-serif">
+                  Glow Bella
+                </h1>
             </div>
 
             <nav className="space-y-1">

@@ -45,7 +45,7 @@ import { enhanceProductImage } from '@/src/lib/imageGenerator';
 const DEFAULT_SETTINGS: Settings = {
   id: 'global',
   defaultMarkup: 50,
-  storeName: 'Glow Bela',
+  storeName: 'Glow Bella',
   currency: 'BRL',
 };
 
@@ -285,7 +285,7 @@ export default function InventoryView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold font-serif italic text-brand-ink">Boutique de Produtos</h1>
-          <p className="text-brand-metallic text-sm font-medium">Curadoria e controle de estoque Glow Bela. Markup padrao: {settings.defaultMarkup}%</p>
+          <p className="text-brand-metallic text-sm font-medium">Curadoria e controle de estoque Glow Bella. Markup padrao: {settings.defaultMarkup}%</p>
         </div>
         
         <div className="flex gap-3">
@@ -374,7 +374,7 @@ export default function InventoryView() {
                             onClick={toggleEnhancedImage}
                             className="absolute bottom-1 left-1 right-1 px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[7px] font-black uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity"
                           >
-                            {imageEnhanced ? 'Original' : 'Glow Bela'}
+                            {imageEnhanced ? 'Original' : 'Glow Bella'}
                           </button>
                         )}
                         <button

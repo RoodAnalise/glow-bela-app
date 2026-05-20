@@ -103,7 +103,7 @@ export default function ReportsView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold font-serif italic text-brand-ink">Painel de Performance</h1>
-          <p className="text-brand-metallic text-sm font-medium">Radiografia do sucesso Glow Bela Cosméticos.</p>
+          <p className="text-brand-metallic text-sm font-medium">Radiografia do sucesso Glow Bella Cosméticos.</p>
         </div>
         
         <div className="flex items-center gap-3">

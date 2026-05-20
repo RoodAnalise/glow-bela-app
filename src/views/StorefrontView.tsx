@@ -204,7 +204,7 @@ export default function StorefrontView() {
       return;
     }
     const cleanPhone = settings.whatsappNumber.replace(/\D/g, '');
-    const message = encodeURIComponent(`Ola! Vim da loja online da Glow Bela e gostaria de mais informacoes. ✨`);
+    const message = encodeURIComponent(`Ola! Vim da loja online da Glow Bella e gostaria de mais informacoes. ✨`);
     window.open(`https://wa.me/55${cleanPhone}?text=${message}`, '_blank');
   };
 

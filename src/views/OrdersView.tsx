@@ -87,7 +87,7 @@ export default function OrdersView() {
   const openWhatsApp = (phone: string, order: Order) => {
     const cleanPhone = phone.replace(/\D/g, '');
     const message = encodeURIComponent(
-      `Ola ${order.customerName}! Recebemos seu pedido #${order.id?.slice(0, 8)} na Glow Bela. ` +
+      `Ola ${order.customerName}! Recebemos seu pedido #${order.id?.slice(0, 8)} na Glow Bella. ` +
       `Total: R$ ${order.totalAmount.toFixed(2)}. Entraremos em contato em breve! ✨`
     );
     window.open(`https://wa.me/55${cleanPhone}?text=${message}`, '_blank');

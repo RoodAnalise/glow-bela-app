@@ -103,7 +103,7 @@ export default function AISocialMedia({ product, open, onOpenChange }: AISocialM
             </div>
             IA Social Media
           </DialogTitle>
-          <p className="text-sm text-brand-metallic mt-2">Crie publicacoes profissionais para Instagram com a paleta Glow Bela</p>
+          <p className="text-sm text-brand-metallic mt-2">Crie publicacoes profissionais para Instagram com a paleta Glow Bella</p>
         </DialogHeader>
 
         <div className="px-8 pb-8 overflow-y-auto max-h-[70vh]">

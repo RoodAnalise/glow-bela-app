@@ -5,29 +5,30 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", serif;
   
-  --color-brand-blush: #E6B8C2;
-  --color-brand-soft: #C9808F;
-  --color-brand-primary: #B86579;
+  --color-brand-blush: #F2D1D9;
+  --color-brand-soft: #E8B4C8;
+  --color-brand-primary: #D4849A;
   --color-brand-nude: #D4A5AA;
+  --color-brand-gold: #C9A96E;
   --color-brand-metallic: #94625C;
-  --color-brand-offwhite: #E8E0DE;
-  --color-brand-ink: #1E1E1E;
+  --color-brand-offwhite: #FAF5F3;
+  --color-brand-ink: #1A1A1A;
 
   /* Standard Tailwind mapping for convenience */
-  --color-background: #E8E0DE;
-  --color-foreground: #1E1E1E;
+  --color-background: #FAF5F3;
+  --color-foreground: #1A1A1A;
   --color-card: #FFFFFF;
-  --color-card-foreground: #1E1E1E;
-  --color-primary: #B86579;
+  --color-card-foreground: #1A1A1A;
+  --color-primary: #D4849A;
   --color-primary-foreground: #FFFFFF;
   --color-border: #D4A5AA;
-  --color-ring: #B86579;
+  --color-ring: #D4849A;
 
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
   --radius-3xl: 2rem;
   
-  --shadow-luxury: 0 10px 40px -10px rgba(217, 124, 146, 0.1);
+  --shadow-luxury: 0 10px 40px -10px rgba(212, 132, 154, 0.15);
 }
 
 @layer base {

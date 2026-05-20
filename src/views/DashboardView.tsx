@@ -54,7 +54,7 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
   return (
     <div className="space-y-10">
       <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold tracking-tight text-brand-ink font-serif italic">Olá, Glow Bela! ✨</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-brand-ink font-serif italic">Ola, Glow Bella! ✨</h1>
         <p className="text-brand-metallic text-sm font-medium">Sua boutique está radiante hoje.</p>
       </div>
 

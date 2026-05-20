@@ -105,7 +105,7 @@ export default function CustomersView() {
 
   const openWhatsApp = (phone: string, name: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
-    const message = encodeURIComponent(`Ola ${name}! Aqui e da equipe Glow Bela. ✨`);
+    const message = encodeURIComponent(`Ola ${name}! Aqui e da equipe Glow Bella. ✨`);
     window.open(`https://wa.me/55${cleanPhone}?text=${message}`, '_blank');
   };
 
