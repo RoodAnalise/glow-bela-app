@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#B86579" />
+    <meta name="theme-color" content="#D4849A" />
     <meta name="description" content="Sistema de gestao e venda de cosmeticos Glow Bella" />
     <meta name="apple-mobile-web-app-title" content="Glow Bella" />
     <link rel="manifest" href="/manifest.json" />
@@ -12,6 +12,23 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Force clear old service worker and cache
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (var registration of registrations) {
+            registration.unregister();
+          }
+        });
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            for (var name of names) {
+              if (name.includes('glow-bela')) caches.delete(name);
+            }
+          });
+        }
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
