@@ -69,17 +69,6 @@ export default function App() {
     setLoggedIn(false);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-offwhite">
-        <div className="flex flex-col items-center gap-4">
-          <Sparkles className="animate-pulse text-brand-primary" size={48} />
-          <p className="text-brand-metallic font-medium">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
   const loginPhrases = [
     "Sua beleza e sua forca. 💫",
     "Cada detalhe importa quando o assunto e voce. ✨",
@@ -98,6 +87,17 @@ export default function App() {
     }, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-brand-offwhite">
+        <div className="flex flex-col items-center gap-4">
+          <Sparkles className="animate-pulse text-brand-primary" size={48} />
+          <p className="text-brand-metallic font-medium">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (currentView !== 'store' && !loggedIn) {
     return (
