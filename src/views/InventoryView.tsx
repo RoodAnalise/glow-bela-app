@@ -40,6 +40,7 @@ import { useLocalDB } from '@/src/lib/useLocalDB';
 import { cn } from "@/lib/utils";
 import AISocialMedia from '@/src/components/AISocialMedia';
 import { analyzeProductImage, isAIConfigured } from '@/src/lib/gemini';
+import { enhanceProductImage } from '@/src/lib/imageGenerator';
 
 const DEFAULT_SETTINGS: Settings = {
   id: 'global',
@@ -89,7 +90,11 @@ export default function InventoryView() {
     imageUrl: ''
   });
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [originalImage, setOriginalImage] = useState<string>('');
+  const [enhancedImage, setEnhancedImage] = useState<string>('');
+  const [imageEnhanced, setImageEnhanced] = useState(false);
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
+  const [imageEnhancing, setImageEnhancing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -137,8 +142,21 @@ export default function InventoryView() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const result = reader.result as string;
+        setOriginalImage(result);
         setImagePreview(result);
         setFormData({ ...formData, imageUrl: result });
+
+        setImageEnhancing(true);
+        try {
+          const enhanced = await enhanceProductImage(result);
+          setEnhancedImage(enhanced);
+          setImageEnhanced(true);
+          setFormData(prev => ({ ...prev, imageUrl: enhanced }));
+        } catch {
+          setEnhancedImage(result);
+        } finally {
+          setImageEnhancing(false);
+        }
 
         if (isAIConfigured() && !editingProduct) {
           setAiAnalyzing(true);
@@ -150,7 +168,7 @@ export default function InventoryView() {
                 name: analysis.name,
                 category: analysis.category,
                 description: analysis.description,
-                imageUrl: result
+                imageUrl: imageEnhanced ? enhancedImage : result
               }));
               toast.success('Produto identificado pela IA!');
             }
@@ -165,8 +183,20 @@ export default function InventoryView() {
     }
   };
 
+  const toggleEnhancedImage = () => {
+    if (imageEnhanced) {
+      const newEnhanced = !imageEnhanced;
+      setImageEnhanced(newEnhanced);
+      setImagePreview(newEnhanced ? enhancedImage : originalImage);
+      setFormData(prev => ({ ...prev, imageUrl: newEnhanced ? enhancedImage : originalImage }));
+    }
+  };
+
   const removeImage = () => {
     setImagePreview('');
+    setOriginalImage('');
+    setEnhancedImage('');
+    setImageEnhanced(false);
     setFormData({ ...formData, imageUrl: '' });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -334,10 +364,18 @@ export default function InventoryView() {
                     {imagePreview ? (
                       <div className="relative w-28 h-28 rounded-2xl overflow-hidden border-2 border-brand-nude group">
                         <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                        {aiAnalyzing && (
+                        {imageEnhancing && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                             <div className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full" />
                           </div>
+                        )}
+                        {imageEnhanced && !imageEnhancing && (
+                          <button
+                            onClick={toggleEnhancedImage}
+                            className="absolute bottom-1 left-1 right-1 px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[7px] font-black uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            {imageEnhanced ? 'Original' : 'Glow Bela'}
+                          </button>
                         )}
                         <button
                           onClick={removeImage}

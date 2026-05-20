@@ -215,3 +215,153 @@ export function downloadImage(dataUrl: string, filename: string) {
   link.href = dataUrl;
   link.click();
 }
+
+export function enhanceProductImage(imageBase64: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const size = 800;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+
+      // Background gradient (Glow Bela brand)
+      const bgGradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size * 0.7);
+      bgGradient.addColorStop(0, '#FFF5F7');
+      bgGradient.addColorStop(0.5, '#F8E8EC');
+      bgGradient.addColorStop(1, '#E8D5DA');
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, size, size);
+
+      // Decorative circles
+      ctx.globalAlpha = 0.08;
+      ctx.fillStyle = '#B86579';
+      ctx.beginPath();
+      ctx.arc(size * 0.85, size * 0.15, size * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(size * 0.12, size * 0.88, size * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(size * 0.75, size * 0.82, size * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Product image area (centered, with padding)
+      const padding = size * 0.12;
+      const imgAreaSize = size - padding * 2;
+
+      // Shadow for product image
+      ctx.shadowColor = 'rgba(184, 101, 121, 0.25)';
+      ctx.shadowBlur = 30;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 8;
+
+      // Rounded rectangle clip for product
+      const radius = imgAreaSize * 0.06;
+      const imgX = padding;
+      const imgY = padding;
+
+      ctx.beginPath();
+      ctx.moveTo(imgX + radius, imgY);
+      ctx.lineTo(imgX + imgAreaSize - radius, imgY);
+      ctx.quadraticCurveTo(imgX + imgAreaSize, imgY, imgX + imgAreaSize, imgY + radius);
+      ctx.lineTo(imgX + imgAreaSize, imgY + imgAreaSize - radius);
+      ctx.quadraticCurveTo(imgX + imgAreaSize, imgY + imgAreaSize, imgX + imgAreaSize - radius, imgY + imgAreaSize);
+      ctx.lineTo(imgX + radius, imgY + imgAreaSize);
+      ctx.quadraticCurveTo(imgX, imgY + imgAreaSize, imgX, imgY + imgAreaSize - radius);
+      ctx.lineTo(imgX, imgY + radius);
+      ctx.quadraticCurveTo(imgX, imgY, imgX + radius, imgY);
+      ctx.closePath();
+      ctx.clip();
+
+      // White background inside the product area
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(imgX, imgY, imgAreaSize, imgAreaSize);
+
+      // Draw product image (cover fit)
+      const scale = Math.max(imgAreaSize / img.width, imgAreaSize / img.height);
+      const scaledW = img.width * scale;
+      const scaledH = img.height * scale;
+      const drawX = imgX + (imgAreaSize - scaledW) / 2;
+      const drawY = imgY + (imgAreaSize - scaledH) / 2;
+
+      // Apply slight brightness/contrast enhancement
+      ctx.filter = 'brightness(1.05) contrast(1.02) saturate(1.08)';
+      ctx.drawImage(img, drawX, drawY, scaledW, scaledH);
+      ctx.filter = 'none';
+
+      // Reset shadow
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+
+      // Border around product area
+      ctx.strokeStyle = '#D4A5AA';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(imgX + radius, imgY);
+      ctx.lineTo(imgX + imgAreaSize - radius, imgY);
+      ctx.quadraticCurveTo(imgX + imgAreaSize, imgY, imgX + imgAreaSize, imgY + radius);
+      ctx.lineTo(imgX + imgAreaSize, imgY + imgAreaSize - radius);
+      ctx.quadraticCurveTo(imgX + imgAreaSize, imgY + imgAreaSize, imgX + imgAreaSize - radius, imgY + imgAreaSize);
+      ctx.lineTo(imgX + radius, imgY + imgAreaSize);
+      ctx.quadraticCurveTo(imgX, imgY + imgAreaSize, imgX, imgY + imgAreaSize - radius);
+      ctx.lineTo(imgX, imgY + radius);
+      ctx.quadraticCurveTo(imgX, imgY, imgX + radius, imgY);
+      ctx.closePath();
+      ctx.stroke();
+
+      // Inner subtle border
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.lineWidth = 1;
+      const innerOffset = 4;
+      ctx.beginPath();
+      ctx.moveTo(imgX + radius + innerOffset, imgY + innerOffset);
+      ctx.lineTo(imgX + imgAreaSize - radius - innerOffset, imgY + innerOffset);
+      ctx.quadraticCurveTo(imgX + imgAreaSize - innerOffset, imgY + innerOffset, imgX + imgAreaSize - innerOffset, imgY + radius + innerOffset);
+      ctx.lineTo(imgX + imgAreaSize - innerOffset, imgY + imgAreaSize - radius - innerOffset);
+      ctx.quadraticCurveTo(imgX + imgAreaSize - innerOffset, imgY + imgAreaSize - innerOffset, imgX + imgAreaSize - radius - innerOffset, imgY + imgAreaSize - innerOffset);
+      ctx.lineTo(imgX + radius + innerOffset, imgY + imgAreaSize - innerOffset);
+      ctx.quadraticCurveTo(imgX + innerOffset, imgY + imgAreaSize - innerOffset, imgX + innerOffset, imgY + imgAreaSize - radius - innerOffset);
+      ctx.lineTo(imgX + innerOffset, imgY + radius + innerOffset);
+      ctx.quadraticCurveTo(imgX + innerOffset, imgY + innerOffset, imgX + radius + innerOffset, imgY + innerOffset);
+      ctx.closePath();
+      ctx.stroke();
+
+      // Glow Bela watermark
+      ctx.fillStyle = 'rgba(184, 101, 121, 0.15)';
+      ctx.font = 'bold 28px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('✨ GLOW BELA', size / 2, size - 30);
+
+      // Decorative sparkles
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = '#B86579';
+      drawSparkle(ctx, size * 0.08, size * 0.12, 12);
+      drawSparkle(ctx, size * 0.92, size * 0.25, 10);
+      drawSparkle(ctx, size * 0.15, size * 0.78, 8);
+      drawSparkle(ctx, size * 0.88, size * 0.72, 14);
+      ctx.globalAlpha = 1;
+
+      // Small decorative dots
+      ctx.globalAlpha = 0.2;
+      ctx.fillStyle = '#D4A5AA';
+      ctx.beginPath();
+      ctx.arc(size * 0.05, size * 0.5, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(size * 0.95, size * 0.45, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(size * 0.5, size * 0.05, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.onerror = () => resolve(imageBase64);
+    img.src = imageBase64;
+  });
+}
