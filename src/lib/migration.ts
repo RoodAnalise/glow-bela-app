@@ -32,38 +32,39 @@ export async function migrateProducts(): Promise<MigrateResult> {
 
     // 3. Migrar um por um
     for (const product of localProducts) {
+      const p = product as any;
       try {
-        if (existingIds.has(product.id)) continue;
+        if (existingIds.has(p.id)) continue;
 
-        let imageUrl = product.imageUrl || '';
+        let imageUrl = p.imageUrl || '';
         
         // Se a imagem for base64, enviar para o Storage
-        if (product.imageUrl && product.imageUrl.startsWith('data:')) {
-          const blob = await fetch(product.imageUrl).then(r => r.blob());
-          const file = new File([blob], `${product.id}.jpg`, { type: 'image/jpeg' });
-          const uploadedUrl = await uploadImage(file, `${product.id}-${Date.now()}.jpg`);
+        if (p.imageUrl && p.imageUrl.startsWith('data:')) {
+          const blob = await fetch(p.imageUrl).then(r => r.blob());
+          const file = new File([blob], `${p.id}.jpg`, { type: 'image/jpeg' });
+          const uploadedUrl = await uploadImage(file, `${p.id}-${Date.now()}.jpg`);
           if (uploadedUrl) imageUrl = uploadedUrl;
         }
 
         // 4. Inserir na tabela 'produtos' com colunas em Português
         const { error } = await supabase.from('produtos').insert({
-          id: product.id,
-          nome: product.name,
-          descricao: product.description,
-          categoria: product.category,
-          preco_de_custo: product.costPrice,
-          porcentagem_de_margem: product.markupPercent,
-          preco_de_venda: product.sellPrice,
-          quantidade_em_estoque: product.stockQuantity,
-          porcentagem_de_desconto: product.discountPercent,
+          id: p.id,
+          nome: p.name,
+          descricao: p.description,
+          categoria: p.category,
+          preco_de_custo: p.costPrice,
+          porcentagem_de_margem: p.markupPercent,
+          preco_de_venda: p.sellPrice,
+          quantidade_em_estoque: p.stockQuantity,
+          porcentagem_de_desconto: p.discountPercent,
           url_da_imagem: imageUrl,
-          criado_em: safeDate(product.createdAt), // Data corrigida
+          criado_em: safeDate(p.createdAt), // Data corrigida
         });
 
         if (error) throw error;
         result.migrated++;
       } catch (err: any) {
-        result.errors.push(`Erro em ${product.name}: ${err.message}`);
+        result.errors.push(`Erro em ${p.name}: ${err.message}`);
       }
     }
 
@@ -85,15 +86,16 @@ export async function migrateCustomers(): Promise<MigrateResult> {
     const existingIds = new Set(existing?.map((c: any) => c.id) || []);
 
     for (const customer of localCustomers) {
-      if (existingIds.has(customer.id)) continue;
+      const c = customer as any;
+      if (existingIds.has(c.id)) continue;
       const { error } = await supabase.from('clientes').insert({
-        id: customer.id,
-        nome: customer.name,
-        telefone: customer.phone,
-        email: customer.email,
-        endereco: customer.address,
-        origem: customer.source,
-        criado_em: safeDate(customer.createdAt)
+        id: c.id,
+        nome: c.name,
+        telefone: c.phone,
+        email: c.email,
+        endereco: c.address,
+        origem: c.source,
+        criado_em: safeDate(c.createdAt)
       });
       if (error) throw error;
       result.migrated++;
@@ -113,18 +115,19 @@ export async function migrateOrders(): Promise<MigrateResult> {
     const existingIds = new Set(existing?.map((o: any) => o.id) || []);
 
     for (const order of localOrders) {
-      if (existingIds.has(order.id)) continue;
+      const o = order as any;
+      if (existingIds.has(o.id)) continue;
       const { error } = await supabase.from('pedidos').insert({
-        id: order.id,
-        nome_do_cliente: order.customerName,
-        telefone_do_cliente: order.customerPhone,
-        itens: order.items,
-        valor_total: order.totalAmount,
-        valor_do_desconto: order.discountAmount,
-        metodo_de_pagamento: order.paymentMethod,
-        observacoes: order.notes,
-        status: order.status,
-        criado_em: safeDate(order.createdAt)
+        id: o.id,
+        nome_do_cliente: o.customerName,
+        telefone_do_cliente: o.customerPhone,
+        itens: o.items,
+        valor_total: o.totalAmount,
+        valor_do_desconto: o.discountAmount,
+        metodo_de_pagamento: o.paymentMethod,
+        observacoes: o.notes,
+        status: o.status,
+        criado_em: safeDate(o.createdAt)
       });
       if (error) throw error;
       result.migrated++;
@@ -144,15 +147,16 @@ export async function migrateSettings(): Promise<MigrateResult> {
     const existingIds = new Set(existing?.map((s: any) => s.id) || []);
 
     for (const setting of localSettings) {
-      if (existingIds.has(setting.id)) continue;
+      const s = setting as any;
+      if (existingIds.has(s.id)) continue;
       const { error } = await supabase.from('configuracoes').insert({
-        id: setting.id,
-        margem_padrao: setting.defaultMarkup,
-        nome_da_loja: setting.storeName,
-        moeda: setting.currency,
-        numero_do_whatsapp: setting.whatsappNumber,
-        descricao_da_loja: setting.storeDescription,
-        criado_em: safeDate(setting.createdAt)
+        id: s.id,
+        margem_padrao: s.defaultMarkup,
+        nome_da_loja: s.storeName,
+        moeda: s.currency,
+        numero_do_whatsapp: s.whatsappNumber,
+        descricao_da_loja: s.storeDescription,
+        criado_em: safeDate(s.createdAt)
       });
       if (error) throw error;
       result.migrated++;

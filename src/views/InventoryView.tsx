@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calculator,
   Package,
@@ -43,7 +43,7 @@ import { useSupabaseDB } from '@/src/lib/useSupabaseDB';
 import { cn } from "@/lib/utils";
 import AISocialMedia from '@/src/components/AISocialMedia';
 import { analyzeProductImage, isAIConfigured, generateDescriptionFromName } from '@/src/lib/gemini';
-import { enhanceProductImage, imageUrlToBase64 } from '@/src/lib/supabase';
+import { imageUrlToBase64 } from '@/src/lib/supabase';
 
 const DEFAULT_SETTINGS: Settings = {
   id: 'global',
@@ -61,8 +61,9 @@ export default function InventoryView() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const { data: products, loading: loadingProducts, create, update: updateSupabase, remove } = useSupabaseDB<Product>('products');
-  const { data: settingsData, loading: loadingSettings } = useSupabaseDB<Settings>('settings');
+  const { data: settingsData, loading: loadingSettings, update: updateSettings } = useSupabaseDB<Settings>('settings');
   const settings = settingsData?.[0] || DEFAULT_SETTINGS;
+  const [localSettings, setLocalSettings] = useState<Settings>(settings);
 
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
@@ -104,6 +105,10 @@ export default function InventoryView() {
       }));
     }
   }, [settings.defaultMarkup]);
+
+  useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings]);
 
   // Auto-generate description when name changes (debounced)
   useEffect(() => {
@@ -151,48 +156,47 @@ export default function InventoryView() {
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
 
     const newPreviews: string[] = [];
     const newFiles: File[] = [];
 
     for (const file of files) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const result = reader.result as string;
-        newPreviews.push(result);
-        newFiles.push(file);
+      const result = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      
+      newPreviews.push(result);
+      newFiles.push(file);
+    }
 
-        if (newPreviews.length === files.length) {
-          const allPreviews = [...imagePreviews, ...newPreviews];
-          setImagePreviews(allPreviews);
-          setNewImageFiles(prev => [...prev, ...newFiles]);
-          setFormData(prev => ({ ...prev, imageUrls: allPreviews }));
-          setCurrentImageIndex(0);
+    const allPreviews = [...imagePreviews, ...newPreviews];
+    setImagePreviews(allPreviews);
+    setNewImageFiles(prev => [...prev, ...newFiles]);
+    setFormData(prev => ({ ...prev, imageUrls: allPreviews }));
+    setCurrentImageIndex(0);
 
-          if (isAIConfigured() && !editingProduct && newPreviews.length > 0) {
-            setAiAnalyzing(true);
-            try {
-              const analysis = await analyzeProductImage(newPreviews[0]);
-              if (analysis.name) {
-                setFormData(prev => ({
-                  ...prev,
-                  name: analysis.name,
-                  category: analysis.category,
-                  description: analysis.description,
-                }));
-                toast.success('Produto identificado pela IA!');
-              }
-            } catch (err) {
-              console.error('AI analysis error:', err);
-            } finally {
-              setAiAnalyzing(false);
-            }
-          }
+    if (isAIConfigured() && !editingProduct && newPreviews.length > 0) {
+      setAiAnalyzing(true);
+      try {
+        const analysis = await analyzeProductImage(newPreviews[0]);
+        if (analysis.name) {
+          setFormData(prev => ({
+            ...prev,
+            name: analysis.name,
+            category: analysis.category,
+            description: analysis.description,
+          }));
+          toast.success('Produto identificado pela IA!');
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('AI analysis error:', err);
+      } finally {
+        setAiAnalyzing(false);
+      }
     }
   };
 
@@ -238,28 +242,38 @@ export default function InventoryView() {
       }
 
       const analysis = await analyzeProductImage(base64Image);
-      if (analysis.name) {
-        const productName = analysis.name || formData.name || '';
-        let description = analysis.description || '';
-        
-        if (productName) {
-          try {
-            const aiDesc = await generateDescriptionFromName(productName);
-            if (aiDesc) description = aiDesc;
-          } catch (e) {
-            console.error('Erro ao gerar descricao:', e);
-          }
+      
+      // Sempre gera descricao a partir do nome (existente ou da IA)
+      const productName = analysis.name || formData.name || '';
+      let description = '';
+      
+      if (productName) {
+        try {
+          const aiDesc = await generateDescriptionFromName(productName);
+          if (aiDesc) description = aiDesc;
+        } catch (e) {
+          console.error('Erro ao gerar descricao:', e);
         }
+      }
 
+      // Se a IA identificou algo, atualiza tudo
+      if (analysis.name) {
         setFormData(prev => ({
           ...prev,
-          name: productName,
+          name: analysis.name,
           category: analysis.category || prev.category,
+          description: description || prev.description,
+        }));
+        toast.success('Produto identificado e descrito pela IA!');
+      } else if (description) {
+        // So atualiza a descricao se ja tem nome
+        setFormData(prev => ({
+          ...prev,
           description: description,
         }));
-        toast.success('Produto reanalisado pela IA!');
+        toast.success('Descricao gerada pela IA!');
       } else {
-        toast.warning('Nao foi possivel identificar o produto. Tente outra imagem.');
+        toast.warning('Nao foi possivel identificar o produto.');
       }
     } catch (err) {
       console.error('AI reload error:', err);
@@ -276,16 +290,35 @@ export default function InventoryView() {
     }
 
     try {
-      let finalImageUrls = [...(formData.imageUrls || [])];
+      // Separar URLs existentes (HTTP) dos novos (base64)
+      const existingUrls = (formData.imageUrls || []).filter(u => u.startsWith('http'));
+      const base64Previews = (formData.imageUrls || []).filter(u => u.startsWith('data:'));
 
+      let finalImageUrls = [...existingUrls];
+
+      // Upload de novos arquivos
       if (newImageFiles.length > 0) {
         const productId = editingProduct?.id || `prod-${Date.now()}`;
         const { uploadMultipleImages } = await import('@/src/lib/supabase');
         const uploadedUrls = await uploadMultipleImages(newImageFiles, productId);
         if (uploadedUrls.length > 0) {
-          finalImageUrls = [...finalImageUrls.filter(u => u.startsWith('http')), ...uploadedUrls];
+          finalImageUrls = [...finalImageUrls, ...uploadedUrls];
         }
       }
+      // Fallback: se tem base64 mas nao tem arquivos, tenta converter
+      else if (base64Previews.length > 0 && existingUrls.length === 0 && !editingProduct?.id) {
+        const productId = `prod-${Date.now()}`;
+        const { uploadImage } = await import('@/src/lib/supabase');
+        for (let i = 0; i < base64Previews.length; i++) {
+          const response = await fetch(base64Previews[i]);
+          const blob = await response.blob();
+          const file = new File([blob], `image-${i}.jpg`, { type: 'image/jpeg' });
+          const url = await uploadImage(file, `${productId}-${Date.now()}-${i}.jpg`);
+          if (url) finalImageUrls.push(url);
+        }
+      }
+
+      console.log('Salvando produto com imagens:', finalImageUrls);
 
       const productData = {
         name: formData.name.trim(),
@@ -328,9 +361,9 @@ export default function InventoryView() {
   const handleSaveSettings = async () => {
     try {
       if (settings.id) {
-        await updateSupabase(settings.id, settings);
+        await updateSettings(settings.id, localSettings);
       } else {
-        await create(settings);
+        await create(localSettings);
       }
       toast.success("Configurações salvas");
       setIsSettingsOpen(false);
@@ -429,8 +462,8 @@ export default function InventoryView() {
                   <Input 
                     id="defaultMarkup" 
                     type="number" 
-                    value={settings.defaultMarkup} 
-                    onChange={(e) => setSettings({...settings, defaultMarkup: parseInt(e.target.value) || 0})} 
+                    value={localSettings.defaultMarkup} 
+                    onChange={(e) => setLocalSettings({...localSettings, defaultMarkup: parseInt(e.target.value) || 0})} 
                     className="h-12 rounded-xl border-brand-nude bg-brand-offwhite/50 focus-visible:ring-brand-primary" 
                   />
                 </div>
@@ -438,8 +471,8 @@ export default function InventoryView() {
                   <Label htmlFor="whatsapp" className="text-[10px] uppercase font-black text-brand-metallic tracking-widest">WhatsApp da Loja</Label>
                   <Input 
                     id="whatsapp" 
-                    value={settings.whatsappNumber || ''} 
-                    onChange={(e) => setSettings({...settings, whatsappNumber: e.target.value})} 
+                    value={localSettings.whatsappNumber || ''} 
+                    onChange={(e) => setLocalSettings({...localSettings, whatsappNumber: e.target.value})} 
                     placeholder="5511999999999"
                     className="h-12 rounded-xl border-brand-nude bg-brand-offwhite/50 focus-visible:ring-brand-primary" 
                   />
@@ -547,7 +580,36 @@ export default function InventoryView() {
                         />
                       </div>
                       <div>
-                        <Label className="text-xs font-semibold text-brand-ink mb-1 block">Descrição de Venda</Label>
+                        <div className="flex items-center justify-between mb-1">
+                          <Label className="text-xs font-semibold text-brand-ink">Descrição de Venda</Label>
+                          {formData.name && isAIConfigured() && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!formData.name) return;
+                                setIsGeneratingDesc(true);
+                                try {
+                                  const desc = await generateDescriptionFromName(formData.name);
+                                  if (desc) setFormData(prev => ({ ...prev, description: desc }));
+                                  toast.success('Descricao gerada pelo nome!');
+                                } catch {
+                                  toast.error('Erro ao gerar descricao');
+                                } finally {
+                                  setIsGeneratingDesc(false);
+                                }
+                              }}
+                              disabled={isGeneratingDesc}
+                              className="text-[10px] text-brand-primary font-bold flex items-center gap-1 hover:underline disabled:opacity-50"
+                            >
+                              {isGeneratingDesc ? (
+                                <div className="animate-spin w-3 h-3 border-2 border-brand-primary border-t-transparent rounded-full" />
+                              ) : (
+                                <Sparkles size={12} />
+                              )}
+                              Gerar com IA
+                            </button>
+                          )}
+                        </div>
                         <textarea 
                           value={formData.description} 
                           onChange={(e) => setFormData({...formData, description: e.target.value})} 

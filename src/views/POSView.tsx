@@ -259,6 +259,7 @@ export default function POSView() {
     credit_card: 'Cartao',
     installments: 'Parcelado',
     store_credit: 'Crediario',
+    pix: 'Pix',
   };
 
   if (showCheckout) {

@@ -130,19 +130,21 @@ export default function App() {
         {/* Seja uma Revendedora Button */}
         <button
           onClick={() => setShowResellerRegistration(true)}
-          className="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-full bg-gradient-to-r from-brand-primary to-brand-soft text-white font-bold text-sm shadow-lg shadow-brand-primary/30 hover:shadow-xl hover:shadow-brand-primary/40 transition-all active:scale-95 flex items-center gap-2"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 px-3 py-2 sm:px-5 sm:py-3 rounded-full bg-gradient-to-r from-brand-primary to-brand-soft text-white font-bold text-[11px] sm:text-sm shadow-lg shadow-brand-primary/30 hover:shadow-xl hover:shadow-brand-primary/40 transition-all active:scale-95 flex items-center gap-1.5"
         >
-          <Star size={16} />
-          Seja uma Revendedora
+          <Star size={14} />
+          <span className="hidden sm:inline">Seja uma Revendedora</span>
+          <span className="sm:hidden">Revendedora</span>
         </button>
 
         {/* Area da Revendedora Login Button */}
         <button
           onClick={() => setShowResellerDashboard(true)}
-          className="fixed bottom-6 left-6 z-50 px-5 py-3 rounded-full bg-white/90 backdrop-blur-sm border border-brand-nude/50 text-brand-primary font-bold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-2"
+          className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-50 px-3 py-2 sm:px-5 sm:py-3 rounded-full bg-white/90 backdrop-blur-sm border border-brand-nude/50 text-brand-primary font-bold text-[11px] sm:text-sm shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-1.5"
         >
-          <UserPlus size={16} />
-          Area da Revendedora
+          <UserPlus size={14} />
+          <span className="hidden sm:inline">Area da Revendedora</span>
+          <span className="sm:hidden">Login Rev.</span>
         </button>
 
         {/* Login Modal */}

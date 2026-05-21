@@ -10,7 +10,7 @@ async function startServer() {
     process.env.NODE_ENV = 'development';
   }
 
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
