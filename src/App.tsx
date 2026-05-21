@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { login, logout, isAuthenticated, getCurrentUser } from '@/src/lib/auth';
 import InstallPrompt from '@/src/components/InstallPrompt';
+import MigrationModal from '@/src/components/MigrationModal';
 
 // Views
 import DashboardView from './views/DashboardView';
@@ -45,11 +46,23 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(true);
   const [loginError, setLoginError] = useState('');
+  const [showMigration, setShowMigration] = useState(false);
 
   useEffect(() => {
     setLoggedIn(isAuthenticated());
     setLoading(false);
+    
+    // Check if migration is needed
+    const hasMigrated = localStorage.getItem('glow-bella-migrated');
+    if (!hasMigrated) {
+      setShowMigration(true);
+    }
   }, []);
+
+  const handleMigrationComplete = () => {
+    localStorage.setItem('glow-bella-migrated', 'true');
+    setShowMigration(false);
+  };
 
   const handleLogin = () => {
     if (!password) {
@@ -81,6 +94,11 @@ export default function App() {
         </div>
       </div>
     );
+  }
+
+  // Migration Modal
+  if (showMigration) {
+    return <MigrationModal onComplete={handleMigrationComplete} />;
   }
 
   // If not logged in, show Storefront + Discreet Admin Button
