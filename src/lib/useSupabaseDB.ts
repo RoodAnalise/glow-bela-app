@@ -14,6 +14,16 @@ const TABLE_MAP: Record<string, string> = {
 
 const translateFromDB = (storeName: string, item: any) => {
   if (storeName === 'products') {
+    const rawUrls = item.urls_da_imagem || item.image_urls;
+    const singleUrl = item.url_da_imagem || item.image_url || '';
+    let imageUrls: string[] = [];
+    if (Array.isArray(rawUrls)) {
+      imageUrls = rawUrls;
+    } else if (typeof rawUrls === 'string' && rawUrls) {
+      imageUrls = [rawUrls];
+    } else if (singleUrl) {
+      imageUrls = [singleUrl];
+    }
     return {
       id: item.id,
       name: item.nome || item.name || '',
@@ -24,7 +34,7 @@ const translateFromDB = (storeName: string, item: any) => {
       sellPrice: Number(item.preco_de_venda || item.sell_price || 0),
       stockQuantity: Number(item.quantidade_em_estoque || item.stock_quantity || 0),
       discountPercent: Number(item.porcentagem_de_desconto || item.discount_percent || 0),
-      imageUrls: Array.isArray(item.urls_da_imagem) ? item.urls_da_imagem : (item.url_da_imagem ? [item.url_da_imagem] : []),
+      imageUrls: imageUrls,
       createdAt: item.criado_em || item.created_at,
     };
   }
@@ -125,9 +135,10 @@ const translateToDB = (storeName: string, itemData: any) => {
 
   if (storeName === 'products') {
     const imageUrls = Array.isArray(itemData.imageUrls) ? itemData.imageUrls : [];
+    const firstImageUrl = imageUrls.length > 0 ? imageUrls[0] : '';
     return {
-      pt: { ...basePT, nome: itemData.name, descricao: itemData.description, categoria: itemData.category, preco_de_custo: itemData.costPrice, porcentagem_de_margem: itemData.markupPercent, preco_de_venda: itemData.sellPrice, quantidade_em_estoque: itemData.stockQuantity, porcentagem_de_desconto: itemData.discountPercent, urls_da_imagem: imageUrls },
-      en: { ...baseEN, name: itemData.name, description: itemData.description, category: itemData.category, cost_price: itemData.costPrice, markup_percent: itemData.markupPercent, sell_price: itemData.sellPrice, stock_quantity: itemData.stockQuantity, discount_percent: itemData.discountPercent, image_urls: imageUrls },
+      pt: { ...basePT, nome: itemData.name, descricao: itemData.description, categoria: itemData.category, preco_de_custo: itemData.costPrice, porcentagem_de_margem: itemData.markupPercent, preco_de_venda: itemData.sellPrice, quantidade_em_estoque: itemData.stockQuantity, porcentagem_de_desconto: itemData.discountPercent, urls_da_imagem: imageUrls, url_da_imagem: firstImageUrl },
+      en: { ...baseEN, name: itemData.name, description: itemData.description, category: itemData.category, cost_price: itemData.costPrice, markup_percent: itemData.markupPercent, sell_price: itemData.sellPrice, stock_quantity: itemData.stockQuantity, discount_percent: itemData.discountPercent, image_urls: imageUrls, image_url: firstImageUrl },
     };
   }
   if (storeName === 'customers') {
@@ -205,7 +216,7 @@ export const useSupabaseDB = <T extends { id?: string }>(storeName: string) => {
           throw fallback.error;
         }
         tableName = fallbackTableName;
-        isPT = false;
+        isPT = false; // Fallback usa colunas em ingles
         items = fallback.data;
         console.log(`Conexao OK com tabela '${tableName}' - ${items?.length || 0} registros`);
       } else {
