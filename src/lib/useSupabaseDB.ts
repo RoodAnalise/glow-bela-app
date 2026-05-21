@@ -237,15 +237,17 @@ export const useSupabaseDB = <T extends { id?: string }>(storeName: string) => {
     try {
       const { data: items, error } = await supabase
         .from(tableName)
-        .select('*')
-        .order('criado_em', { ascending: true });
+        .select('*');
 
-      if (error) throw error;
+      if (error) {
+        console.error(`Erro Supabase (${tableName}):`, error.message, error.details);
+        throw error;
+      }
 
       const translatedItems = (items || []).map((item: any) => translateFromDB(storeName, item));
       setData(translatedItems);
-    } catch (err) {
-      console.error(`Erro ao buscar ${tableName}:`, err);
+    } catch (err: any) {
+      console.error(`Erro ao buscar ${tableName}:`, err?.message || err);
     } finally {
       setLoading(false);
     }

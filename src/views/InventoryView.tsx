@@ -263,7 +263,7 @@ export default function InventoryView() {
       };
 
       if (editingProduct?.id) {
-        await updateFirestore(editingProduct.id, productData);
+        await updateSupabase(editingProduct.id, productData);
         toast.success("Produto atualizado com sucesso");
       } else {
         await create(productData);
@@ -677,7 +677,16 @@ export default function InventoryView() {
       </div>
 
       {/* Financial Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {loadingProducts ? (
+        <div className="flex items-center justify-center py-24">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin w-10 h-10 border-3 border-brand-primary border-t-transparent rounded-full" />
+            <p className="text-brand-metallic font-medium">Carregando estoque...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-none shadow-sm bg-white rounded-2xl p-5">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-8 h-8 rounded-lg bg-brand-blush/30 flex items-center justify-center text-brand-primary">
@@ -792,20 +801,22 @@ export default function InventoryView() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredProducts.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-20">
-                    <div className="flex flex-col items-center gap-4 text-brand-metallic opacity-40">
-                      <Sparkles size={48} strokeWidth={0.5} />
-                      <p className="font-serif italic text-lg">Nenhum produto em exibicao.</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            {filteredProducts.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-20">
+                  <div className="flex flex-col items-center gap-4 text-brand-metallic opacity-40">
+                    <Sparkles size={48} strokeWidth={0.5} />
+                    <p className="font-serif italic text-lg">Nenhum produto em exibicao.</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+        </>
+      )}
 
       {aiProduct && (
         <AISocialMedia
