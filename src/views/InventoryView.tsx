@@ -336,69 +336,99 @@ export default function InventoryView() {
 
           <Dialog open={isModalOpen} onOpenChange={(open) => { setIsModalOpen(open); if(!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="bg-brand-ink hover:bg-brand-primary text-white rounded-2xl gap-3 h-14 px-8 font-black uppercase tracking-widest shadow-xl shadow-brand-ink/10 group transition-all active:scale-95">
+              <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-2xl gap-3 h-14 px-8 font-bold tracking-wide shadow-lg shadow-brand-primary/25 group transition-all active:scale-95">
                 <Plus size={20} className="group-hover:rotate-90 transition-transform" />
-                Novo Item Luxo
+                Novo Produto
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[680px] rounded-[2.5rem] border-brand-nude shadow-luxury p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
-              <div className="p-8 pb-0">
-                <DialogHeader className="mb-6">
-                  <DialogTitle className="text-2xl font-bold font-serif italic flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-brand-blush flex items-center justify-center text-brand-primary">
-                      <Package size={20} strokeWidth={1.5} />
+            <DialogContent className="sm:max-w-[720px] rounded-3xl border-none shadow-2xl p-0 overflow-hidden max-h-[90vh] overflow-y-auto bg-white">
+              {/* Header with gradient */}
+              <div className="bg-gradient-to-r from-brand-primary to-brand-soft p-6 pb-5">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-bold text-white flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Package size={20} strokeWidth={1.5} className="text-white" />
                     </div>
-                    {editingProduct ? 'Ajustar Preciosidade' : 'Nova Preciosidade'}
+                    {editingProduct ? 'Editar Produto' : 'Novo Produto'}
                   </DialogTitle>
-                  <p className="text-xs text-brand-metallic font-medium mt-1 ml-[52px]">
-                    {editingProduct ? 'Edite as informacoes do produto' : 'Adicione um novo produto ao seu catalogo de luxo'}
+                  <p className="text-xs text-white/80 font-medium mt-1 ml-[52px]">
+                    {editingProduct ? 'Atualize as informações do produto' : 'Preencha os dados para cadastrar no estoque e na loja'}
                   </p>
                 </DialogHeader>
               </div>
 
-              <div className="px-8 py-6 space-y-6">
-                {/* Image Upload Section */}
-                <div className="flex gap-6">
-                  <div className="flex-shrink-0">
-                    <Label className="text-[10px] uppercase font-black text-brand-metallic tracking-widest mb-2 block">Foto</Label>
+              <div className="px-6 py-5 space-y-5">
+                {/* Step 1: Image Upload */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-brand-primary text-white flex items-center justify-center text-xs font-bold">1</div>
+                    <Label className="text-sm font-bold text-brand-ink">Foto do Produto</Label>
+                    {isAIConfigured() && (
+                      <span className="text-[10px] bg-brand-blush text-brand-primary px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                        <Sparkles size={10} /> IA preenche automaticamente
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-start gap-4">
                     {imagePreview ? (
-                      <div className="relative w-28 h-28 rounded-2xl overflow-hidden border-2 border-brand-nude group">
+                      <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-brand-nude/30 group flex-shrink-0">
                         <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                         {imageEnhancing && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full" />
+                            <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
                           </div>
                         )}
                         {imageEnhanced && !imageEnhancing && (
                           <button
                             onClick={toggleEnhancedImage}
-                            className="absolute bottom-1 left-1 right-1 px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[7px] font-black uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute bottom-1 left-1 right-1 px-1 py-0.5 rounded bg-brand-primary/80 text-white text-[7px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             {imageEnhanced ? 'Original' : 'Glow Bella'}
                           </button>
                         )}
                         <button
                           onClick={removeImage}
-                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <X size={12} />
+                          <X size={10} />
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-28 h-28 rounded-2xl border-2 border-dashed border-brand-nude bg-brand-offwhite/50 flex flex-col items-center justify-center gap-1 hover:border-brand-primary hover:bg-brand-blush/30 transition-all cursor-pointer"
+                        className="w-24 h-24 rounded-xl border-2 border-dashed border-brand-nude/50 bg-gray-50 flex flex-col items-center justify-center gap-1 hover:border-brand-primary hover:bg-brand-blush/10 transition-all cursor-pointer flex-shrink-0"
                       >
                         {aiAnalyzing ? (
-                          <div className="animate-spin w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full" />
+                          <div className="animate-spin w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full" />
                         ) : (
                           <>
-                            <ImagePlus size={24} className="text-brand-metallic/50" />
-                            <span className="text-[8px] uppercase font-black text-brand-metallic/50 tracking-wider">Upload</span>
+                            <ImagePlus size={20} className="text-brand-metallic/40" />
+                            <span className="text-[8px] uppercase font-bold text-brand-metallic/40">Upload</span>
                           </>
                         )}
                       </button>
                     )}
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <Label className="text-xs font-semibold text-brand-ink mb-1 block">Nome do Produto</Label>
+                        <Input 
+                          value={formData.name} 
+                          onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                          placeholder="Ex: Sérum Iluminador Rosé"
+                          className="h-10 rounded-lg border-gray-200 bg-gray-50 focus-visible:ring-brand-primary text-sm" 
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-brand-ink mb-1 block">Descrição de Venda</Label>
+                        <textarea 
+                          value={formData.description} 
+                          onChange={(e) => setFormData({...formData, description: e.target.value})} 
+                          placeholder="Descreva os benefícios do produto..."
+                          rows={2}
+                          className="flex w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary resize-none placeholder:text-gray-400"
+                        />
+                      </div>
+                    </div>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -406,175 +436,142 @@ export default function InventoryView() {
                       onChange={handleImageChange}
                       className="hidden"
                     />
-                    {isAIConfigured() && (
-                      <p className="text-[7px] text-brand-primary/60 mt-1 flex items-center gap-0.5 font-medium">
-                        <Sparkles size={8} />
-                        IA auto-preenche
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex-1 space-y-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="name" className="text-[10px] uppercase font-black text-brand-metallic tracking-widest">Identidade do Produto</Label>
-                      <Input 
-                        id="name" 
-                        value={formData.name} 
-                        onChange={(e) => setFormData({...formData, name: e.target.value})} 
-                        placeholder="Ex: Serum Iluminador Rose"
-                        className="h-12 rounded-xl border-brand-nude bg-brand-offwhite/50 focus-visible:ring-brand-primary" 
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="description" className="text-[10px] uppercase font-black text-brand-metallic tracking-widest">Descricao</Label>
-                      <textarea 
-                        id="description" 
-                        value={formData.description} 
-                        onChange={(e) => setFormData({...formData, description: e.target.value})} 
-                        placeholder="Descreva os beneficios e caracteristicas do produto..."
-                        rows={2}
-                        className="flex w-full rounded-xl border border-brand-nude bg-brand-offwhite/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary resize-none placeholder:text-brand-metallic/40"
-                      />
-                    </div>
                   </div>
                 </div>
 
-                {/* Category & Stock */}
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="grid gap-2">
-                    <Label htmlFor="category" className="text-[10px] uppercase font-black text-brand-metallic tracking-widest">Categoria</Label>
-                    <Input 
-                      id="category" 
-                      value={formData.category} 
-                      onChange={(e) => setFormData({...formData, category: e.target.value})} 
-                      placeholder="SkinCare, Makeup..."
-                      className="h-12 rounded-xl border-brand-nude bg-brand-offwhite/50 focus-visible:ring-brand-primary" 
-                    />
+                {/* Step 2: Category & Stock */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-brand-primary text-white flex items-center justify-center text-xs font-bold">2</div>
+                    <Label className="text-sm font-bold text-brand-ink">Categoria e Estoque</Label>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="stock" className="text-[10px] uppercase font-black text-brand-metallic tracking-widest">Estoque</Label>
-                    <Input 
-                      id="stock" 
-                      type="number" 
-                      value={formData.stockQuantity} 
-                      onChange={(e) => setFormData({...formData, stockQuantity: parseInt(e.target.value) || 0})} 
-                      className="h-12 rounded-xl border-brand-nude bg-brand-offwhite/50 focus-visible:ring-brand-primary" 
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold text-brand-ink mb-1 block">Categoria</Label>
+                      <Input 
+                        value={formData.category} 
+                        onChange={(e) => setFormData({...formData, category: e.target.value})} 
+                        placeholder="SkinCare, Maquiagem..."
+                        className="h-10 rounded-lg border-gray-200 bg-gray-50 focus-visible:ring-brand-primary text-sm" 
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold text-brand-ink mb-1 block">Quantidade em Estoque</Label>
+                      <Input 
+                        type="number" 
+                        value={formData.stockQuantity} 
+                        onChange={(e) => setFormData({...formData, stockQuantity: parseInt(e.target.value) || 0})} 
+                        className="h-10 rounded-lg border-gray-200 bg-gray-50 focus-visible:ring-brand-primary text-sm" 
+                      />
+                    </div>
                   </div>
                 </div>
                 
-                {/* Pricing Engine */}
-                <div className="p-6 bg-gradient-to-br from-brand-blush/30 to-brand-offwhite/50 rounded-[2rem] border border-brand-nude/50 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-brand-primary font-black text-[10px] uppercase tracking-[0.2em]">
-                      <Calculator size={14} />
-                      Engenharia de Preco
-                    </div>
+                {/* Step 3: Pricing */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-brand-primary text-white flex items-center justify-center text-xs font-bold">3</div>
+                    <Label className="text-sm font-bold text-brand-ink">Preço e Margem</Label>
                     {formData.costPrice > 0 && formData.sellPrice > formData.costPrice && (
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 border border-green-200">
-                        <TrendingUp size={12} className="text-green-600" />
-                        <span className="text-[10px] font-black text-green-600 uppercase tracking-wider">Margem: {profitMargin}%</span>
-                      </div>
+                      <span className="ml-auto text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <TrendingUp size={12} /> Margem: {profitMargin}%
+                      </span>
                     )}
                   </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="cost" className="text-[9px] uppercase text-brand-metallic font-bold">Custo (R$)</Label>
+                  <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-100">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-[10px] uppercase font-semibold text-gray-500 mb-1 block">Custo (R$)</Label>
+                        <Input 
+                          type="number" 
+                          value={formData.costPrice} 
+                          onChange={(e) => handlePriceChange('costPrice', parseFloat(e.target.value))} 
+                          className="rounded-lg h-10 bg-white border-gray-200 text-sm" 
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] uppercase font-semibold text-gray-500 mb-1 block">Markup (%)</Label>
+                        <Input 
+                          type="number" 
+                          value={formData.markupPercent} 
+                          onChange={(e) => handlePriceChange('markupPercent', parseFloat(e.target.value))} 
+                          className="rounded-lg h-10 bg-white border-gray-200 text-sm" 
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] uppercase font-bold text-brand-primary mb-1 block">Venda (R$)</Label>
+                        <Input 
+                          type="number" 
+                          value={formData.sellPrice} 
+                          onChange={(e) => handlePriceChange('sellPrice', parseFloat(e.target.value))} 
+                          className="rounded-lg h-10 bg-white border-brand-primary/30 font-bold text-brand-primary text-sm ring-1 ring-brand-primary/20" 
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-[10px] uppercase font-semibold text-gray-500 mb-1 block">Desconto Promocional (%)</Label>
                       <Input 
-                        id="cost" 
                         type="number" 
-                        value={formData.costPrice} 
-                        onChange={(e) => handlePriceChange('costPrice', parseFloat(e.target.value))} 
-                        className="rounded-xl h-11 bg-white border-brand-nude" 
+                        value={formData.discountPercent} 
+                        onChange={(e) => setFormData({...formData, discountPercent: parseFloat(e.target.value) || 0})} 
+                        className="h-10 rounded-lg bg-white border-gray-200 text-sm" 
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="markup" className="text-[9px] uppercase text-brand-metallic font-bold">Markup (%)</Label>
-                      <Input 
-                        id="markup" 
-                        type="number" 
-                        value={formData.markupPercent} 
-                        onChange={(e) => handlePriceChange('markupPercent', parseFloat(e.target.value))} 
-                        className="rounded-xl h-11 bg-white border-brand-nude" 
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="sell" className="text-[9px] uppercase text-brand-primary font-black italic">Venda (R$)</Label>
-                      <Input 
-                        id="sell" 
-                        type="number" 
-                        value={formData.sellPrice} 
-                        onChange={(e) => handlePriceChange('sellPrice', parseFloat(e.target.value))} 
-                        className="rounded-xl h-11 bg-white border-brand-primary/30 font-black text-brand-primary ring-1 ring-brand-primary/20" 
-                      />
-                    </div>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="discount" className="text-[10px] uppercase font-black text-brand-metallic tracking-widest">Desconto Promocional (%)</Label>
-                    <Input 
-                      id="discount" 
-                      type="number" 
-                      value={formData.discountPercent} 
-                      onChange={(e) => setFormData({...formData, discountPercent: parseFloat(e.target.value) || 0})} 
-                      className="h-12 rounded-xl border-brand-nude bg-white focus-visible:ring-brand-primary" 
-                    />
                   </div>
                 </div>
 
                 {/* Preview Card */}
                 {formData.name && (
-                  <div className="p-5 bg-brand-ink/5 rounded-[1.5rem] border border-brand-nude/30">
-                    <div className="flex items-center gap-2 text-brand-metallic font-black text-[10px] uppercase tracking-[0.2em] mb-3">
+                  <div className="p-4 bg-brand-blush/20 rounded-xl border border-brand-nude/20">
+                    <div className="flex items-center gap-2 text-brand-primary font-bold text-xs mb-2">
                       <Eye size={14} />
-                      Preview do Produto
+                      Preview na Loja
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                       {imagePreview ? (
-                        <img src={imagePreview} alt={formData.name} className="w-16 h-16 rounded-xl object-cover border border-brand-nude" />
+                        <img src={imagePreview} alt={formData.name} className="w-14 h-14 rounded-lg object-cover border border-brand-nude/30" />
                       ) : (
-                        <div className="w-16 h-16 rounded-xl bg-brand-nude/20 flex items-center justify-center">
-                          <Package size={20} className="text-brand-metallic/30" />
+                        <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center">
+                          <Package size={18} className="text-gray-300" />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold font-serif italic text-brand-ink truncate">{formData.name}</h4>
+                        <h4 className="font-bold text-brand-ink truncate">{formData.name}</h4>
                         {formData.category && (
-                          <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-brand-offwhite text-brand-metallic text-[9px] font-black uppercase tracking-wider border border-brand-nude">
+                          <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full bg-white text-gray-500 text-[9px] font-bold uppercase border border-gray-200">
                             {formData.category}
                           </span>
                         )}
-                        <div className="flex items-center gap-3 mt-1.5">
-                          <span className="text-xs font-black text-brand-primary">
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm font-bold text-brand-primary">
                             R$ {formData.sellPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
                           {formData.discountPercent > 0 && (
-                            <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">
+                            <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
                               -{formData.discountPercent}%
                             </span>
                           )}
                         </div>
                       </div>
                       {formData.stockQuantity !== undefined && (
-                        <div className="text-right flex-shrink-0">
-                          <span className={cn(
-                            "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider",
-                            formData.stockQuantity <= 0 ? "bg-red-50 text-red-500 border border-red-200" :
-                            formData.stockQuantity <= 5 ? "bg-amber-50 text-amber-600 border border-amber-200" :
-                            "bg-green-50 text-green-600 border border-green-200"
-                          )}>
-                            {formData.stockQuantity <= 0 ? 'Esgotado' : `${formData.stockQuantity} un`}
-                          </span>
-                        </div>
+                        <span className={cn(
+                          "px-2 py-1 rounded-lg text-[10px] font-bold",
+                          formData.stockQuantity <= 0 ? "bg-red-50 text-red-500" :
+                          formData.stockQuantity <= 5 ? "bg-amber-50 text-amber-600" :
+                          "bg-green-50 text-green-600"
+                        )}>
+                          {formData.stockQuantity <= 0 ? 'Esgotado' : `${formData.stockQuantity} un`}
+                        </span>
                       )}
                     </div>
                   </div>
                 )}
               </div>
 
-              <DialogFooter className="px-8 py-6 bg-brand-offwhite/30 border-t border-brand-nude/20 gap-3">
-                <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="rounded-xl text-brand-metallic hover:text-brand-ink uppercase text-[10px] font-black tracking-widest">Descartar</Button>
-                <Button onClick={handleSave} className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-xl px-8 h-12 font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-brand-primary/20 transition-all active:scale-95">
-                  {editingProduct ? 'Salvar Alteracoes' : 'Eternalizar Produto'}
+              <DialogFooter className="px-6 py-4 bg-gray-50 border-t border-gray-100 gap-3">
+                <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="rounded-lg text-gray-500 hover:text-brand-ink font-medium">Cancelar</Button>
+                <Button onClick={handleSave} className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-lg px-6 h-11 font-bold shadow-lg shadow-brand-primary/20 transition-all active:scale-95">
+                  {editingProduct ? 'Salvar Alterações' : 'Cadastrar Produto'}
                 </Button>
               </DialogFooter>
             </DialogContent>
