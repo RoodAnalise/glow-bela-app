@@ -52,7 +52,8 @@ export async function migrateProducts(): Promise<MigrateResult> {
           stock_quantity: product.stockQuantity,
           discount_percent: product.discountPercent,
           image_url: imageUrl,
-          created_at: product.createdAt || new Date().toISOString(),
+          // Correção: Converter timestamp numérico para ISO String
+          created_at: product.createdAt ? new Date(product.createdAt).toISOString() : new Date().toISOString(),
         });
 
         if (error) throw error;
