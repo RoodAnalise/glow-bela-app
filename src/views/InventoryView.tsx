@@ -79,6 +79,7 @@ export default function InventoryView() {
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [imageEnhancing, setImageEnhancing] = useState(false);
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
+  const [reloadingWithAI, setReloadingWithAI] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -213,6 +214,34 @@ export default function InventoryView() {
   const profitMargin = formData.costPrice && formData.sellPrice && formData.costPrice > 0
     ? (((formData.sellPrice - formData.costPrice) / formData.sellPrice) * 100).toFixed(1)
     : '0';
+
+  const handleReloadWithAI = async () => {
+    const imageUrl = formData.imageUrl || imagePreview;
+    if (!imageUrl) {
+      toast.error('Adicione uma imagem primeiro');
+      return;
+    }
+    setReloadingWithAI(true);
+    try {
+      const analysis = await analyzeProductImage(imageUrl);
+      if (analysis.name) {
+        setFormData(prev => ({
+          ...prev,
+          name: analysis.name,
+          category: analysis.category,
+          description: analysis.description,
+        }));
+        toast.success('Produto reanalisado pela IA!');
+      } else {
+        toast.warning('Nao foi possivel identificar o produto. Tente outra imagem.');
+      }
+    } catch (err) {
+      console.error('AI reload error:', err);
+      toast.error('Erro ao reanalisar com IA');
+    } finally {
+      setReloadingWithAI(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!formData.name?.trim()) {
@@ -488,6 +517,22 @@ export default function InventoryView() {
                       onChange={handleImageChange}
                       className="hidden"
                     />
+                    {imagePreview && isAIConfigured() && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleReloadWithAI}
+                        disabled={reloadingWithAI}
+                        className="h-10 px-4 rounded-lg border-brand-primary/30 text-brand-primary hover:bg-brand-blush/50 text-xs font-bold flex items-center gap-2 flex-shrink-0"
+                      >
+                        {reloadingWithAI ? (
+                          <div className="animate-spin w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full" />
+                        ) : (
+                          <Sparkles size={14} />
+                        )}
+                        Recarregar com IA
+                      </Button>
+                    )}
                   </div>
                 </div>
 

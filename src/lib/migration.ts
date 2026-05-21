@@ -7,6 +7,13 @@ interface MigrateResult {
   errors: string[];
 }
 
+// Função para garantir data válida e no formato ISO
+const safeDate = (val: any) => {
+  if (!val) return new Date().toISOString();
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+};
+
 export async function migrateProducts(): Promise<MigrateResult> {
   const result: MigrateResult = { success: false, migrated: 0, errors: [] };
 
@@ -19,10 +26,9 @@ export async function migrateProducts(): Promise<MigrateResult> {
       return result;
     }
 
-    // 2. Verificar o que já existe no Supabase para não duplicar
-    // Nota: A tabela no banco se chama 'products' (em inglês), mesmo que o Supabase mostre traduzido.
-    const { data: existingProducts } = await supabase.from('products').select('id');
-    const existingIds = new Set(existingProducts?.map((p: any) => p.id) || []);
+    // 2. Verificar o que já existe no Supabase (Tabela 'produtos')
+    const { data: existing } = await supabase.from('produtos').select('id');
+    const existingIds = new Set(existing?.map((p: any) => p.id) || []);
 
     // 3. Migrar um por um
     for (const product of localProducts) {
@@ -31,7 +37,7 @@ export async function migrateProducts(): Promise<MigrateResult> {
 
         let imageUrl = product.imageUrl || '';
         
-        // Se a imagem for base64 (texto gigante), enviar para o Storage
+        // Se a imagem for base64, enviar para o Storage
         if (product.imageUrl && product.imageUrl.startsWith('data:')) {
           const blob = await fetch(product.imageUrl).then(r => r.blob());
           const file = new File([blob], `${product.id}.jpg`, { type: 'image/jpeg' });
@@ -39,35 +45,31 @@ export async function migrateProducts(): Promise<MigrateResult> {
           if (uploadedUrl) imageUrl = uploadedUrl;
         }
 
-        // 4. Inserir no Supabase usando os nomes corretos (Inglês)
-        // O Supabase traduz a interface, mas o banco espera 'name', 'cost_price', etc.
-        const { error } = await supabase.from('products').insert({
+        // 4. Inserir na tabela 'produtos' com colunas em Português
+        const { error } = await supabase.from('produtos').insert({
           id: product.id,
-          name: product.name,
-          description: product.description,
-          category: product.category,
-          cost_price: product.costPrice,
-          markup_percent: product.markupPercent,
-          sell_price: product.sellPrice,
-          stock_quantity: product.stockQuantity,
-          discount_percent: product.discountPercent,
-          image_url: imageUrl,
-          // Correção: Converter timestamp numérico para ISO String
-          created_at: product.createdAt ? new Date(product.createdAt).toISOString() : new Date().toISOString(),
+          nome: product.name,
+          descricao: product.description,
+          categoria: product.category,
+          preco_de_custo: product.costPrice,
+          porcentagem_de_margem: product.markupPercent,
+          preco_de_venda: product.sellPrice,
+          quantidade_em_estoque: product.stockQuantity,
+          porcentagem_de_desconto: product.discountPercent,
+          url_da_imagem: imageUrl,
+          criado_em: safeDate(product.createdAt), // Data corrigida
         });
 
         if (error) throw error;
         result.migrated++;
       } catch (err: any) {
-        // Log detalhado para debug
-        console.error('Migration Error Detail:', JSON.stringify(err));
-        result.errors.push(`Erro em ${product.name}: ${err.message || 'Verifique o console (F12)'}`);
+        result.errors.push(`Erro em ${product.name}: ${err.message}`);
       }
     }
 
     result.success = result.errors.length === 0;
   } catch (err: any) {
-    result.errors.push(`Falha na migração: ${err.message || err}`);
+    result.errors.push(`Falha na migração: ${err.message}`);
   }
 
   return result;
@@ -78,12 +80,20 @@ export async function migrateCustomers(): Promise<MigrateResult> {
   try {
     const localCustomers = await getAll('customers');
     if (localCustomers.length === 0) { result.success = true; return result; }
-    const { data: existing } = await supabase.from('customers').select('id');
+    
+    const { data: existing } = await supabase.from('clientes').select('id');
     const existingIds = new Set(existing?.map((c: any) => c.id) || []);
+
     for (const customer of localCustomers) {
       if (existingIds.has(customer.id)) continue;
-      const { error } = await supabase.from('customers').insert({
-        id: customer.id, name: customer.name, phone: customer.phone, email: customer.email, address: customer.address, source: customer.source, created_at: customer.createdAt || new Date().toISOString()
+      const { error } = await supabase.from('clientes').insert({
+        id: customer.id,
+        nome: customer.name,
+        telefone: customer.phone,
+        email: customer.email,
+        endereco: customer.address,
+        origem: customer.source,
+        criado_em: safeDate(customer.createdAt)
       });
       if (error) throw error;
       result.migrated++;
@@ -98,12 +108,23 @@ export async function migrateOrders(): Promise<MigrateResult> {
   try {
     const localOrders = await getAll('orders');
     if (localOrders.length === 0) { result.success = true; return result; }
-    const { data: existing } = await supabase.from('orders').select('id');
+
+    const { data: existing } = await supabase.from('pedidos').select('id');
     const existingIds = new Set(existing?.map((o: any) => o.id) || []);
+
     for (const order of localOrders) {
       if (existingIds.has(order.id)) continue;
-      const { error } = await supabase.from('orders').insert({
-        id: order.id, customer_name: order.customerName, customer_phone: order.customerPhone, items: order.items, total_amount: order.totalAmount, discount_amount: order.discountAmount, payment_method: order.paymentMethod, notes: order.notes, status: order.status, created_at: order.createdAt || new Date().toISOString()
+      const { error } = await supabase.from('pedidos').insert({
+        id: order.id,
+        nome_do_cliente: order.customerName,
+        telefone_do_cliente: order.customerPhone,
+        itens: order.items,
+        valor_total: order.totalAmount,
+        valor_do_desconto: order.discountAmount,
+        metodo_de_pagamento: order.paymentMethod,
+        observacoes: order.notes,
+        status: order.status,
+        criado_em: safeDate(order.createdAt)
       });
       if (error) throw error;
       result.migrated++;
@@ -118,12 +139,20 @@ export async function migrateSettings(): Promise<MigrateResult> {
   try {
     const localSettings = await getAll('settings');
     if (localSettings.length === 0) { result.success = true; return result; }
-    const { data: existing } = await supabase.from('settings').select('id');
+
+    const { data: existing } = await supabase.from('configuracoes').select('id');
     const existingIds = new Set(existing?.map((s: any) => s.id) || []);
+
     for (const setting of localSettings) {
       if (existingIds.has(setting.id)) continue;
-      const { error } = await supabase.from('settings').insert({
-        id: setting.id, default_markup: setting.defaultMarkup, store_name: setting.storeName, currency: setting.currency, whatsapp_number: setting.whatsappNumber, store_description: setting.storeDescription, created_at: setting.createdAt || new Date().toISOString()
+      const { error } = await supabase.from('configuracoes').insert({
+        id: setting.id,
+        margem_padrao: setting.defaultMarkup,
+        nome_da_loja: setting.storeName,
+        moeda: setting.currency,
+        numero_do_whatsapp: setting.whatsappNumber,
+        descricao_da_loja: setting.storeDescription,
+        criado_em: safeDate(setting.createdAt)
       });
       if (error) throw error;
       result.migrated++;

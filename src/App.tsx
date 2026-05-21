@@ -14,7 +14,9 @@ import {
   Lock,
   ClipboardList,
   MessageCircle,
-  Shield
+  Shield,
+  Star,
+  UserPlus
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
@@ -35,8 +37,11 @@ import POSView from './views/POSView';
 import ReportsView from './views/ReportsView';
 import StorefrontView from './views/StorefrontView';
 import OrdersView from './views/OrdersView';
+import ResellerRegistrationView from './views/ResellerRegistrationView';
+import ResellersAdminView from './views/ResellersAdminView';
+import ResellerDashboardView from './views/ResellerDashboardView';
 
-type View = 'dashboard' | 'inventory' | 'customers' | 'pos' | 'reports' | 'store' | 'orders';
+type View = 'dashboard' | 'inventory' | 'customers' | 'pos' | 'reports' | 'store' | 'orders' | 'resellers';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -47,6 +52,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [loginError, setLoginError] = useState('');
   const [showMigration, setShowMigration] = useState(false);
+  const [showResellerRegistration, setShowResellerRegistration] = useState(false);
+  const [showResellerDashboard, setShowResellerDashboard] = useState(false);
 
   useEffect(() => {
     setLoggedIn(isAuthenticated());
@@ -118,6 +125,24 @@ export default function App() {
           title="Area Administrativa"
         >
           <Shield size={16} />
+        </button>
+
+        {/* Seja uma Revendedora Button */}
+        <button
+          onClick={() => setShowResellerRegistration(true)}
+          className="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-full bg-gradient-to-r from-brand-primary to-brand-soft text-white font-bold text-sm shadow-lg shadow-brand-primary/30 hover:shadow-xl hover:shadow-brand-primary/40 transition-all active:scale-95 flex items-center gap-2"
+        >
+          <Star size={16} />
+          Seja uma Revendedora
+        </button>
+
+        {/* Area da Revendedora Login Button */}
+        <button
+          onClick={() => setShowResellerDashboard(true)}
+          className="fixed bottom-6 left-6 z-50 px-5 py-3 rounded-full bg-white/90 backdrop-blur-sm border border-brand-nude/50 text-brand-primary font-bold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-2"
+        >
+          <UserPlus size={16} />
+          Area da Revendedora
         </button>
 
         {/* Login Modal */}
@@ -193,6 +218,20 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Reseller Registration Modal */}
+        <AnimatePresence>
+          {showResellerRegistration && (
+            <ResellerRegistrationView onClose={() => setShowResellerRegistration(false)} />
+          )}
+        </AnimatePresence>
+
+        {/* Reseller Dashboard Modal */}
+        <AnimatePresence>
+          {showResellerDashboard && (
+            <ResellerDashboardView onClose={() => setShowResellerDashboard(false)} />
+          )}
+        </AnimatePresence>
       </div>
     );
   }
@@ -206,6 +245,7 @@ export default function App() {
     { id: 'orders', label: 'Pedidos Online', icon: ClipboardList },
     { id: 'inventory', label: 'Estoque', icon: Package },
     { id: 'customers', label: 'Clientes', icon: Users },
+    { id: 'resellers', label: 'Revendedores', icon: Star },
     { id: 'reports', label: 'Relatorios', icon: BarChart3 },
     { id: 'store', label: 'Loja Online', icon: Sparkles },
   ];
@@ -217,6 +257,7 @@ export default function App() {
       case 'customers': return <CustomersView />;
       case 'pos': return <POSView />;
       case 'orders': return <OrdersView />;
+      case 'resellers': return <ResellersAdminView />;
       case 'reports': return <ReportsView />;
       case 'store': return <StorefrontView />;
       default: return <DashboardView onNavigate={setCurrentView} />;

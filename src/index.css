@@ -5,30 +5,30 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", serif;
   
-  --color-brand-blush: #F2D1D9;
-  --color-brand-soft: #E8B4C8;
-  --color-brand-primary: #D4849A;
-  --color-brand-nude: #D4A5AA;
-  --color-brand-gold: #C9A96E;
-  --color-brand-metallic: #94625C;
-  --color-brand-offwhite: #F0F0F0;
-  --color-brand-ink: #1A1A1A;
+  --color-brand-blush: #CEB2B9;
+  --color-brand-soft: #C599AA;
+  --color-brand-primary: #B47083;
+  --color-brand-nude: #B48C90;
+  --color-brand-gold: #AB905E;
+  --color-brand-metallic: #7E534E;
+  --color-brand-offwhite: #E0E0E0;
+  --color-brand-ink: #161616;
 
   /* Standard Tailwind mapping for convenience */
-  --color-background: #F0F0F0;
-  --color-foreground: #1A1A1A;
-  --color-card: #FFFFFF;
-  --color-card-foreground: #1A1A1A;
-  --color-primary: #D4849A;
+  --color-background: #E0E0E0;
+  --color-foreground: #161616;
+  --color-card: #F5F5F5;
+  --color-card-foreground: #161616;
+  --color-primary: #B47083;
   --color-primary-foreground: #FFFFFF;
-  --color-border: #D4A5AA;
-  --color-ring: #D4849A;
+  --color-border: #B48C90;
+  --color-ring: #B47083;
 
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
   --radius-3xl: 2rem;
   
-  --shadow-luxury: 0 10px 40px -10px rgba(212, 132, 154, 0.15);
+  --shadow-luxury: 0 10px 40px -10px rgba(180, 112, 131, 0.2);
 }
 
 @layer base {

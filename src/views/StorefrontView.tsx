@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   ShoppingBag, 
   Search, 
@@ -15,7 +15,8 @@ import {
   Phone,
   CheckCircle2,
   Store,
-  Clock
+  Clock,
+  Eye
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,8 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Product, Settings, Order, OrderItem, Customer } from "@/src/types";
-import { useLocalDB } from '@/src/lib/useLocalDB';
+import { useSupabaseDB } from '@/src/lib/useSupabaseDB';
+import { supabase } from '@/src/lib/supabase';
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -40,86 +42,93 @@ interface CartItem {
   stockQuantity: number;
 }
 
+const CART_STORAGE_KEY = 'glow-bella-cart';
+
+function loadCart(): CartItem[] {
+  try {
+    const saved = localStorage.getItem(CART_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCart(cart: CartItem[]) {
+  localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+}
+
 export default function StorefrontView() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(loadCart);
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('pix');
+  const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
 
-  const { subscribe: subProducts } = useLocalDB<Product>('products');
-  const { subscribe: subSettings } = useLocalDB<Settings>('settings');
-  const { create: createOrder } = useLocalDB<Order>('orders');
-  const { create: createCustomer } = useLocalDB<Customer>('customers');
-
-  const [products, setProducts] = useState<Product[]>([]);
-  const [settings, setSettings] = useState<Settings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: products, loading: loadingProducts, refresh: refreshProducts } = useSupabaseDB<Product>('products');
+  const { data: settingsData } = useSupabaseDB<Settings>('settings');
+  const settings = settingsData?.[0] || null;
 
   useEffect(() => {
-    const unsubP = subProducts((data) => {
-      setProducts(data);
-      setLoading(false);
-    });
-    const unsubS = subSettings((data) => {
-      if (data.length > 0) setSettings(data[0]);
-    });
-    return () => { unsubP(); unsubS(); };
-  }, []);
+    saveCart(cart);
+  }, [cart]);
 
   const categories = ['Todos', ...Array.from(new Set(products.map(p => p.category))).filter(Boolean)];
 
   const filteredProducts = useMemo(() => products.filter(p => 
     (selectedCategory === 'Todos' || p.category === selectedCategory) &&
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  ), [products, searchTerm, selectedCategory]);
+  ).sort((a, b) => a.name.localeCompare(b.name)), [products, searchTerm, selectedCategory]);
 
-  const addToCart = (product: Product) => {
+  const addToCart = useCallback((product: Product) => {
     if (product.stockQuantity <= 0) {
       toast.error("Produto esgotado!");
       return;
     }
-    const existing = cart.find(item => item.productId === product.id);
-    if (existing) {
-      if (existing.quantity >= product.stockQuantity) {
-        toast.error("Quantidade maxima em estoque!");
-        return;
+    setCart(prev => {
+      const existing = prev.find(item => item.productId === product.id);
+      if (existing) {
+        if (existing.quantity >= product.stockQuantity) {
+          toast.error("Quantidade maxima em estoque!");
+          return prev;
+        }
+        toast.success(`${product.name} (+1)`);
+        return prev.map(item => 
+          item.productId === product.id 
+            ? { ...item, quantity: item.quantity + 1 } 
+            : item
+        );
+      } else {
+        const finalPrice = product.discountPercent > 0 
+          ? product.sellPrice * (1 - product.discountPercent / 100) 
+          : product.sellPrice;
+        toast.success(`${product.name} adicionado ao carrinho`);
+        return [...prev, { 
+          productId: product.id!, 
+          name: product.name, 
+          quantity: 1, 
+          price: finalPrice,
+          originalPrice: product.sellPrice,
+          discountPercent: product.discountPercent || 0,
+          imageUrl: product.imageUrl,
+          stockQuantity: product.stockQuantity
+        }];
       }
-      setCart(cart.map(item => 
-        item.productId === product.id 
-          ? { ...item, quantity: item.quantity + 1 } 
-          : item
-      ));
-    } else {
-      const finalPrice = product.discountPercent > 0 
-        ? product.sellPrice * (1 - product.discountPercent / 100) 
-        : product.sellPrice;
-      setCart([...cart, { 
-        productId: product.id!, 
-        name: product.name, 
-        quantity: 1, 
-        price: finalPrice,
-        originalPrice: product.sellPrice,
-        discountPercent: product.discountPercent || 0,
-        imageUrl: product.imageUrl,
-        stockQuantity: product.stockQuantity
-      }]);
-    }
-    toast.success(`${product.name} adicionado ao carrinho`);
-  };
+    });
+  }, []);
 
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter(item => item.productId !== productId));
-  };
+  const removeFromCart = useCallback((productId: string) => {
+    setCart(prev => prev.filter(item => item.productId !== productId));
+    toast.success("Item removido do carrinho");
+  }, []);
 
-  const updateQuantity = (productId: string, delta: number) => {
-    setCart(cart.map(item => {
+  const updateQuantity = useCallback((productId: string, delta: number) => {
+    setCart(prev => prev.map(item => {
       if (item.productId === productId) {
         const newQty = Math.max(1, item.quantity + delta);
         if (newQty > item.stockQuantity) {
@@ -130,7 +139,12 @@ export default function StorefrontView() {
       }
       return item;
     }));
-  };
+  }, []);
+
+  const clearCart = useCallback(() => {
+    setCart([]);
+    toast.info("Carrinho limpo");
+  }, []);
 
   const totals = useMemo(() => {
     const subtotal = cart.reduce((acc, item) => acc + (item.originalPrice * item.quantity), 0);
@@ -170,22 +184,25 @@ export default function StorefrontView() {
         imageUrl: item.imageUrl
       }));
 
-      await createOrder({
-        customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
-        items: orderItems,
-        totalAmount: totals.total,
-        discountAmount: totals.discounts,
-        paymentMethod: selectedPayment,
-        notes: orderNotes.trim(),
-        status: 'pending',
-        createdAt: Date.now()
+      const { error: orderError } = await supabase.from('pedidos').insert({
+        nome_do_cliente: customerName.trim(),
+        telefone_do_cliente: customerPhone.trim(),
+        itens: orderItems,
+        valor_total: totals.total,
+        valor_do_desconto: totals.discounts,
+        metodo_de_pagamento: selectedPayment,
+        observacoes: orderNotes.trim(),
+        status: 'pendente',
+        criado_em: new Date().toISOString()
       });
 
-      await createCustomer({
-        name: customerName.trim(),
-        phone: customerPhone.trim(),
-        source: 'store'
+      if (orderError) throw orderError;
+
+      await supabase.from('clientes').insert({
+        nome: customerName.trim(),
+        telefone: customerPhone.trim(),
+        origem: 'loja',
+        criado_em: new Date().toISOString()
       });
 
       setShowSuccess(true);
@@ -193,8 +210,8 @@ export default function StorefrontView() {
       setCustomerName('');
       setCustomerPhone('');
       setOrderNotes('');
-    } catch {
-      toast.error("Erro ao finalizar pedido. Tente novamente.");
+    } catch (err: any) {
+      toast.error(`Erro ao finalizar pedido: ${err.message}`);
     }
   };
 
@@ -260,6 +277,20 @@ export default function StorefrontView() {
         </button>
       )}
 
+      {/* Floating Cart Button - Always Visible */}
+      <button
+        onClick={() => setShowCart(true)}
+        className="fixed top-4 right-16 z-50 w-12 h-12 rounded-full bg-brand-ink text-white shadow-lg flex items-center justify-center hover:bg-brand-primary transition-all active:scale-95"
+        title="Ver Carrinho"
+      >
+        <ShoppingCart size={20} />
+        {totals.totalItems > 0 && (
+          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-brand-primary text-white text-[10px] font-bold flex items-center justify-center">
+            {totals.totalItems}
+          </span>
+        )}
+      </button>
+
       {/* Hero Section */}
       <div className="relative rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-brand-blush via-brand-offwhite to-white p-8 sm:p-12 lg:p-16 shadow-luxury border border-brand-nude/20">
         <div className="absolute -top-12 -right-12 p-8 opacity-20 pointer-events-none text-brand-primary">
@@ -315,97 +346,119 @@ export default function StorefrontView() {
       </div>
 
       {/* Product Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-8">
-        {filteredProducts.map((product) => {
-          const inCart = cart.find(c => c.productId === product.id);
-          const finalPrice = product.discountPercent > 0 
-            ? product.sellPrice * (1 - product.discountPercent / 100) 
-            : product.sellPrice;
+      {loadingProducts ? (
+        <div className="flex items-center justify-center py-24">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin w-10 h-10 border-3 border-brand-primary border-t-transparent rounded-full" />
+            <p className="text-brand-metallic font-medium">Carregando produtos...</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-8">
+          {filteredProducts.map((product) => {
+            const inCart = cart.find(c => c.productId === product.id);
+            const finalPrice = product.discountPercent > 0 
+              ? product.sellPrice * (1 - product.discountPercent / 100) 
+              : product.sellPrice;
 
-          return (
-            <Card key={product.id} className="border-none shadow-luxury hover:shadow-2xl transition-all duration-500 group rounded-[2rem] lg:rounded-[2.5rem] overflow-hidden bg-white flex flex-col h-full border border-brand-nude/10">
-              <div className="aspect-[4/5] bg-gradient-to-b from-brand-blush/20 to-transparent relative overflow-hidden">
-                {product.imageUrl ? (
-                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700">
-                    <ShoppingBag className="text-brand-blush group-hover:text-brand-soft transition-colors duration-500" size={100} strokeWidth={0.5} />
-                  </div>
-                )}
+            return (
+              <Card key={product.id} className="border-none shadow-luxury hover:shadow-2xl transition-all duration-500 group rounded-[2rem] lg:rounded-[2.5rem] overflow-hidden bg-white flex flex-col h-full border border-brand-nude/10">
+                <div className="aspect-[4/5] bg-gradient-to-b from-brand-blush/20 to-transparent relative overflow-hidden">
+                  {product.imageUrl ? (
+                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700">
+                      <ShoppingBag className="text-brand-blush group-hover:text-brand-soft transition-colors duration-500" size={100} strokeWidth={0.5} />
+                    </div>
+                  )}
+                  
+                  {/* View Product Button */}
+                  <button 
+                    onClick={() => setViewingProduct(product)}
+                    className="absolute top-4 left-14 w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-brand-metallic hover:text-brand-primary hover:scale-110 transition-all shadow-sm"
+                    title="Ver detalhes"
+                  >
+                    <Eye size={18} />
+                  </button>
+                  
+                  <button className="absolute top-4 right-4 w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-brand-metallic hover:text-brand-primary hover:scale-110 transition-all shadow-sm">
+                    <Heart size={18} />
+                  </button>
+                  
+                  {product.discountPercent > 0 && (
+                    <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-black border border-red-400 shadow-sm uppercase tracking-wider">
+                      -{product.discountPercent}% OFF
+                    </div>
+                  )}
+                  {product.stockQuantity <= 3 && product.stockQuantity > 0 && (
+                    <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[10px] font-black text-brand-primary border border-brand-primary/20 shadow-sm uppercase tracking-wider">
+                      Ultimas unidades
+                    </div>
+                  )}
+                  {product.stockQuantity === 0 && (
+                    <div className="absolute inset-0 bg-brand-offwhite/60 backdrop-blur-[2px] flex items-center justify-center z-10">
+                      <div className="px-6 py-2 rounded-full bg-brand-ink text-white text-xs font-black uppercase tracking-widest">
+                        Esgotado
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
-                <button className="absolute top-4 right-4 w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-brand-metallic hover:text-brand-primary hover:scale-110 transition-all shadow-sm">
-                  <Heart size={18} />
-                </button>
-                
-                {product.discountPercent > 0 && (
-                  <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-black border border-red-400 shadow-sm uppercase tracking-wider">
-                    -{product.discountPercent}% OFF
+                <CardContent className="p-5 lg:p-8 flex flex-col flex-1">
+                  <div className="mb-4 lg:mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-6 lg:w-8 h-[1px] bg-brand-soft"></span>
+                      <p className="text-[9px] lg:text-[10px] font-black text-brand-soft uppercase tracking-[0.2em]">{product.category}</p>
+                    </div>
+                    <h3 className="text-lg lg:text-2xl font-bold text-brand-ink leading-tight mb-2 lg:mb-3 group-hover:text-brand-primary transition-colors font-serif">{product.name}</h3>
+                    <p className="text-xs lg:text-sm text-brand-metallic leading-relaxed line-clamp-2 italic">{product.description}</p>
                   </div>
-                )}
-                {product.stockQuantity <= 3 && product.stockQuantity > 0 && (
-                  <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[10px] font-black text-brand-primary border border-brand-primary/20 shadow-sm uppercase tracking-wider">
-                    Ultimas unidades
-                  </div>
-                )}
-                {product.stockQuantity === 0 && (
-                  <div className="absolute inset-0 bg-brand-offwhite/60 backdrop-blur-[2px] flex items-center justify-center z-10">
-                    <div className="px-6 py-2 rounded-full bg-brand-ink text-white text-xs font-black uppercase tracking-widest">
-                      Esgotado
+                  
+                  <div className="mt-auto pt-4 lg:pt-6 flex items-center justify-between border-t border-brand-blush/40">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] lg:text-[10px] text-brand-metallic font-black uppercase tracking-wider mb-1">Valor</span>
+                      {product.discountPercent > 0 ? (
+                        <div className="flex flex-col">
+                          <span className="text-xs text-brand-metallic line-through">R$ {product.sellPrice.toFixed(2)}</span>
+                          <span className="text-xl lg:text-2xl font-black text-red-500 tabular-nums">R$ {finalPrice.toFixed(2)}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xl lg:text-2xl font-black text-brand-ink tabular-nums">R$ {product.sellPrice.toFixed(2)}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {inCart && (
+                        <button
+                          onClick={() => setShowCart(true)}
+                          className="w-7 h-7 rounded-full bg-brand-primary text-white flex items-center justify-center text-xs font-black shadow-lg hover:bg-brand-primary/80 transition-colors"
+                          title="Ver carrinho"
+                        >
+                          {inCart.quantity}
+                        </button>
+                      )}
+                      <Button 
+                        size="icon" 
+                        disabled={product.stockQuantity === 0}
+                        className={cn(
+                          "rounded-xl lg:rounded-2xl h-11 w-11 lg:h-14 lg:w-14 transition-all duration-300 shadow-lg",
+                          product.stockQuantity === 0 
+                            ? "bg-brand-nude text-brand-metallic cursor-not-allowed" 
+                            : "bg-brand-ink hover:bg-brand-primary text-white shadow-brand-ink/20"
+                        )}
+                        onClick={() => addToCart(product)}
+                      >
+                        <ShoppingCart size={18} />
+                      </Button>
                     </div>
                   </div>
-                )}
-              </div>
-              
-              <CardContent className="p-5 lg:p-8 flex flex-col flex-1">
-                <div className="mb-4 lg:mb-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-6 lg:w-8 h-[1px] bg-brand-soft"></span>
-                    <p className="text-[9px] lg:text-[10px] font-black text-brand-soft uppercase tracking-[0.2em]">{product.category}</p>
-                  </div>
-                  <h3 className="text-lg lg:text-2xl font-bold text-brand-ink leading-tight mb-2 lg:mb-3 group-hover:text-brand-primary transition-colors font-serif">{product.name}</h3>
-                  <p className="text-xs lg:text-sm text-brand-metallic leading-relaxed line-clamp-2 italic">{product.description}</p>
-                </div>
-                
-                <div className="mt-auto pt-4 lg:pt-6 flex items-center justify-between border-t border-brand-blush/40">
-                  <div className="flex flex-col">
-                    <span className="text-[9px] lg:text-[10px] text-brand-metallic font-black uppercase tracking-wider mb-1">Valor</span>
-                    {product.discountPercent > 0 ? (
-                      <div className="flex flex-col">
-                        <span className="text-xs text-brand-metallic line-through">R$ {product.sellPrice.toFixed(2)}</span>
-                        <span className="text-xl lg:text-2xl font-black text-red-500 tabular-nums">R$ {finalPrice.toFixed(2)}</span>
-                      </div>
-                    ) : (
-                      <span className="text-xl lg:text-2xl font-black text-brand-ink tabular-nums">R$ {product.sellPrice.toFixed(2)}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {inCart && (
-                      <span className="w-7 h-7 rounded-full bg-brand-primary text-white flex items-center justify-center text-xs font-black shadow-lg">
-                        {inCart.quantity}
-                      </span>
-                    )}
-                    <Button 
-                      size="icon" 
-                      disabled={product.stockQuantity === 0}
-                      className={cn(
-                        "rounded-xl lg:rounded-2xl h-11 w-11 lg:h-14 lg:w-14 transition-all duration-300 shadow-lg",
-                        product.stockQuantity === 0 
-                          ? "bg-brand-nude text-brand-metallic cursor-not-allowed" 
-                          : "bg-brand-ink hover:bg-brand-primary text-white shadow-brand-ink/20"
-                      )}
-                      onClick={() => addToCart(product)}
-                    >
-                      <ShoppingCart size={18} />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
-      {filteredProducts.length === 0 && !loading && (
+      {filteredProducts.length === 0 && !loadingProducts && (
         <div className="text-center py-16 lg:py-24 bg-white/40 rounded-[2.5rem] border border-brand-nude shadow-luxury backdrop-blur-sm">
           <div className="w-20 h-20 lg:w-24 lg:h-24 bg-brand-blush rounded-full flex items-center justify-center mx-auto mb-6 lg:mb-8 text-brand-primary/40">
             <Search size={40} strokeWidth={1} />
@@ -436,7 +489,7 @@ export default function StorefrontView() {
         </button>
       )}
 
-      {/* Cart Sidebar - Desktop */}
+      {/* Cart Sidebar */}
       <AnimatePresence>
         {showCart && (
           <>
@@ -459,7 +512,7 @@ export default function StorefrontView() {
                   <div className="w-10 h-10 rounded-xl bg-brand-blush flex items-center justify-center text-brand-primary">
                     <ShoppingCart size={18} />
                   </div>
-                  Carrinho
+                  Carrinho ({totals.totalItems})
                 </h3>
                 <button onClick={() => setShowCart(false)} className="w-10 h-10 rounded-full bg-brand-offwhite flex items-center justify-center hover:bg-brand-blush transition-colors">
                   <X size={18} />
@@ -474,38 +527,54 @@ export default function StorefrontView() {
                     <p className="text-xs text-brand-metallic mt-1">Adicione produtos para comecar</p>
                   </div>
                 ) : (
-                  cart.map(item => (
-                    <div key={item.productId} className="flex gap-3 p-3 rounded-xl bg-brand-offwhite/50 border border-brand-nude/20">
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="w-16 h-16 rounded-lg bg-brand-nude/20 flex items-center justify-center flex-shrink-0">
-                          <ShoppingBag size={20} className="text-brand-metallic/40" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-brand-ink font-serif italic truncate">{item.name}</h4>
-                        <p className="text-xs text-brand-metallic mt-0.5">R$ {item.price.toFixed(2)} un.</p>
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => updateQuantity(item.productId, -1)} className="w-7 h-7 rounded-lg bg-white border border-brand-nude/50 flex items-center justify-center">
-                              <Minus size={12} />
-                            </button>
-                            <span className="w-8 text-center text-sm font-black">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.productId, 1)} className="w-7 h-7 rounded-lg bg-white border border-brand-nude/50 flex items-center justify-center">
-                              <Plus size={12} />
-                            </button>
+                  <>
+                    {cart.map(item => (
+                      <div key={item.productId} className="flex gap-3 p-3 rounded-xl bg-brand-offwhite/50 border border-brand-nude/20">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.name} className="w-20 h-20 rounded-lg object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-20 h-20 rounded-lg bg-brand-nude/20 flex items-center justify-center flex-shrink-0">
+                            <ShoppingBag size={20} className="text-brand-metallic/40" />
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-brand-primary">R$ {(item.price * item.quantity).toFixed(2)}</span>
-                            <button onClick={() => removeFromCart(item.productId)} className="w-6 h-6 rounded-lg text-brand-metallic hover:text-red-500 hover:bg-red-50 flex items-center justify-center">
-                              <X size={12} />
-                            </button>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-bold text-brand-ink font-serif italic truncate">{item.name}</h4>
+                          {item.discountPercent > 0 && (
+                            <span className="text-[10px] text-red-500 line-through">R$ {item.originalPrice.toFixed(2)}</span>
+                          )}
+                          <p className="text-xs text-brand-metallic mt-0.5">R$ {item.price.toFixed(2)} un.</p>
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => updateQuantity(item.productId, -1)} className="w-7 h-7 rounded-lg bg-white border border-brand-nude/50 flex items-center justify-center hover:bg-brand-blush transition-colors">
+                                <Minus size={12} />
+                              </button>
+                              <span className="w-8 text-center text-sm font-black">{item.quantity}</span>
+                              <button onClick={() => updateQuantity(item.productId, 1)} className="w-7 h-7 rounded-lg bg-white border border-brand-nude/50 flex items-center justify-center hover:bg-brand-blush transition-colors">
+                                <Plus size={12} />
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-black text-brand-primary">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                              <button 
+                                onClick={() => removeFromCart(item.productId)} 
+                                className="w-7 h-7 rounded-lg bg-red-50 text-red-400 hover:text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"
+                                title="Remover item"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                    <button
+                      onClick={clearCart}
+                      className="w-full py-2 text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Trash2 size={14} />
+                      Limpar Carrinho
+                    </button>
+                  </>
                 )}
               </div>
 
@@ -533,10 +602,94 @@ export default function StorefrontView() {
                   >
                     Finalizar Pedido
                   </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowCart(false)}
+                    className="w-full h-12 rounded-2xl font-medium text-brand-metallic border-brand-nude hover:bg-brand-blush/50"
+                  >
+                    Continuar Comprando
+                  </Button>
                 </div>
               )}
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Product Detail Modal */}
+      <AnimatePresence>
+        {viewingProduct && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setViewingProduct(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="aspect-square relative">
+                {viewingProduct.imageUrl ? (
+                  <img src={viewingProduct.imageUrl} alt={viewingProduct.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-b from-brand-blush/30 to-transparent flex items-center justify-center">
+                    <ShoppingBag size={80} className="text-brand-blush" />
+                  </div>
+                )}
+                <button
+                  onClick={() => setViewingProduct(null)}
+                  className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+                {viewingProduct.discountPercent > 0 && (
+                  <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-black uppercase tracking-wider">
+                    -{viewingProduct.discountPercent}% OFF
+                  </div>
+                )}
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <p className="text-[10px] font-black text-brand-soft uppercase tracking-[0.2em] mb-1">{viewingProduct.category}</p>
+                  <h2 className="text-2xl font-bold font-serif italic text-brand-ink">{viewingProduct.name}</h2>
+                </div>
+                <p className="text-sm text-brand-metallic leading-relaxed">{viewingProduct.description}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    {viewingProduct.discountPercent > 0 ? (
+                      <div>
+                        <span className="text-sm text-brand-metallic line-through">R$ {viewingProduct.sellPrice.toFixed(2)}</span>
+                        <p className="text-2xl font-black text-red-500">R$ {(viewingProduct.sellPrice * (1 - viewingProduct.discountPercent / 100)).toFixed(2)}</p>
+                      </div>
+                    ) : (
+                      <p className="text-2xl font-black text-brand-ink">R$ {viewingProduct.sellPrice.toFixed(2)}</p>
+                    )}
+                  </div>
+                  <span className={cn(
+                    "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider",
+                    viewingProduct.stockQuantity <= 0 ? "bg-red-50 text-red-500" :
+                    viewingProduct.stockQuantity <= 5 ? "bg-amber-50 text-amber-600" :
+                    "bg-green-50 text-green-600"
+                  )}>
+                    {viewingProduct.stockQuantity <= 0 ? 'Esgotado' : `${viewingProduct.stockQuantity} un disponiveis`}
+                  </span>
+                </div>
+                <Button 
+                  onClick={() => { addToCart(viewingProduct); setViewingProduct(null); }}
+                  disabled={viewingProduct.stockQuantity === 0}
+                  className="w-full h-14 bg-brand-primary hover:bg-brand-primary/90 text-white rounded-2xl font-bold text-base shadow-lg shadow-brand-primary/20 disabled:opacity-50"
+                >
+                  <ShoppingCart size={18} className="mr-2" />
+                  {viewingProduct.stockQuantity === 0 ? 'Indisponivel' : 'Adicionar ao Carrinho'}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -594,8 +747,8 @@ export default function StorefrontView() {
                     <div className="grid grid-cols-3 gap-2">
                       {[
                         { id: 'pix', label: 'PIX', icon: '💳' },
-                        { id: 'cash', label: 'Dinheiro', icon: '💵' },
-                        { id: 'credit_card', label: 'Cartao', icon: '💎' },
+                        { id: 'dinheiro', label: 'Dinheiro', icon: '💵' },
+                        { id: 'cartao', label: 'Cartao', icon: '💎' },
                       ].map(method => (
                         <button
                           key={method.id}

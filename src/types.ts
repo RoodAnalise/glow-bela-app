@@ -83,3 +83,88 @@ export interface Settings {
   whatsappNumber?: string;
   storeDescription?: string;
 }
+
+export interface Reseller {
+  id?: string;
+  nomeCompleto: string;
+  whatsapp: string;
+  senha: string;
+  endereco: string;
+  status: 'pendente' | 'aprovado' | 'rejeitado';
+  totalVendido: number;
+  comissaoPaga: number;
+  comissaoAPagar: number;
+  criadoEm: string;
+}
+
+export interface ResellerProduct {
+  id?: string;
+  revendedorId: string;
+  produtoId: string;
+  nomeProduto: string;
+  imagemUrl: string;
+  precoVenda: number;
+  quantidade: number;
+  criadoEm: string;
+}
+
+export interface ResellerCustomer {
+  id?: string;
+  revendedorId: string;
+  nome: string;
+  whatsapp: string;
+  endereco?: string;
+  criadoEm: string;
+}
+
+export interface ResellerSale {
+  id?: string;
+  revendedorId: string;
+  clienteNome: string;
+  clienteWhastapp?: string;
+  itens: ResellerSaleItem[];
+  totalVenda: number;
+  comissaoPercentual: number;
+  comissaoValor: number;
+  metodoPagamento: string;
+  parcelas?: number;
+  status: 'concluida' | 'pendente' | 'cancelada';
+  criadoEm: string;
+}
+
+export interface ResellerSaleItem {
+  produtoId: string;
+  nome: string;
+  quantidade: number;
+  preco: number;
+}
+
+export interface ResellerKit {
+  id?: string;
+  revendedorId: string;
+  nome: string;
+  itens: ResellerKitItem[];
+  criadoEm: string;
+}
+
+export interface ResellerKitItem {
+  produtoId: string;
+  nome: string;
+  quantidade: number;
+}
+
+export function getComissaoTier(totalVendido: number): { percentual: number; nivel: string; proximoNivel: number; cor: string } {
+  if (totalVendido >= 2000) {
+    return { percentual: 30, nivel: 'Ouro', proximoNivel: 3000, cor: '#C9A96E' };
+  }
+  if (totalVendido >= 1000) {
+    return { percentual: 25, nivel: 'Prata', proximoNivel: 2000, cor: '#94A3B8' };
+  }
+  return { percentual: 20, nivel: 'Bronze', proximoNivel: 1000, cor: '#CD7F32' };
+}
+
+export function getComissaoParaValor(valor: number): number {
+  if (valor >= 2000) return 30;
+  if (valor >= 1000) return 25;
+  return 20;
+}
