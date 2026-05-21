@@ -1,7 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
+// Hardcoded for immediate functionality (Security warning: visible in source)
+const API_KEY = 'AIzaSyCCRoNRqvZG0aIgobrGnI9dMTHyLjaQZ6c';
+const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 export interface AICaptionResult {
   caption: string;
@@ -10,14 +11,6 @@ export interface AICaptionResult {
 }
 
 export async function generateInstagramCaption(productName: string, category: string, description: string): Promise<AICaptionResult> {
-  if (!ai) {
-    return {
-      caption: `✨ ${productName}\n\n${description}\n\n#GlowBela #Cosmeticos`,
-      hashtags: '#GlowBela #Cosmeticos #Beleza',
-      storyText: `Novidade Glow Bella!\n${productName}`
-    };
-  }
-
   const prompt = `Você é uma social media especializada em cosméticos de luxo. Crie conteúdo para a marca "Glow Bella Cosméticos".
 
 Produto: ${productName}
@@ -64,14 +57,6 @@ export interface ProductAnalysisResult {
 }
 
 export async function analyzeProductImage(imageBase64: string): Promise<ProductAnalysisResult> {
-  if (!ai) {
-    return {
-      name: '',
-      category: '',
-      description: ''
-    };
-  }
-
   const base64Data = imageBase64.split(',')[1] || imageBase64;
 
   try {
@@ -126,5 +111,5 @@ Não inclua markdown ou código, apenas o JSON puro.`
 }
 
 export function isAIConfigured(): boolean {
-  return !!API_KEY;
+  return true;
 }
