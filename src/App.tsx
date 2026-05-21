@@ -13,7 +13,8 @@ import {
   LogOut,
   Lock,
   ClipboardList,
-  MessageCircle
+  MessageCircle,
+  Shield
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(true);
   const [loginError, setLoginError] = useState('');
@@ -57,6 +59,7 @@ export default function App() {
     const success = login(password);
     if (success) {
       setLoggedIn(true);
+      setShowLoginModal(false);
       setLoginError('');
       setPassword('');
     } else {
@@ -69,25 +72,6 @@ export default function App() {
     setLoggedIn(false);
   };
 
-  const loginPhrases = [
-    "Seu momento de cuidado diário. 💫",
-    "Cuidado que realça sua beleza. ✨",
-    "Beleza acessível com toque sofisticado. 🌸",
-    "Glow Bella — brilho, cuidado e autoestima. 💎",
-    "Cada detalhe importa quando o assunto é você. 🌹",
-    "Transforme sua rotina em um ritual de amor próprio. 💖",
-    "Porque você merece brilhar todos os dias. ⭐",
-    "Cosméticos que contam a sua história. 🦋"
-  ];
-  const [currentPhrase, setCurrentPhrase] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentPhrase((prev) => (prev + 1) % loginPhrases.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-brand-offwhite">
@@ -99,159 +83,103 @@ export default function App() {
     );
   }
 
-  if (currentView !== 'store' && !loggedIn) {
+  // If not logged in, show Storefront + Discreet Admin Button
+  if (!loggedIn) {
     return (
-      <div className="min-h-screen flex flex-col lg:flex-row bg-brand-offwhite">
-        {/* Left Side - Branding & Phrases */}
-        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-brand-blush via-brand-soft/30 to-brand-primary/20 p-12 flex-col justify-between">
-          <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-brand-primary/10 blur-3xl" />
-          <div className="absolute -bottom-20 -right-20 w-96 h-96 rounded-full bg-brand-soft/10 blur-3xl" />
-          
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center text-brand-primary shadow-lg">
-                <Sparkles size={28} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-brand-primary font-serif italic">Glow Bella</h1>
-                <p className="text-xs text-brand-metallic font-medium tracking-wider uppercase">Cosmetics & Management</p>
-              </div>
-            </div>
-          </div>
+      <div className="min-h-screen bg-brand-offwhite relative">
+        <Toaster position="top-right" />
+        <InstallPrompt />
+        
+        {/* Main Storefront */}
+        <StorefrontView />
 
-          <div className="relative z-10 space-y-6">
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={currentPhrase}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5 }}
-                className="text-3xl font-serif italic text-brand-ink leading-relaxed"
+        {/* Discreet Admin Login Button */}
+        <button
+          onClick={() => setShowLoginModal(true)}
+          className="fixed top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-brand-nude/30 flex items-center justify-center text-brand-metallic hover:text-brand-primary hover:bg-white transition-all shadow-sm opacity-50 hover:opacity-100"
+          title="Area Administrativa"
+        >
+          <Shield size={16} />
+        </button>
+
+        {/* Login Modal */}
+        <AnimatePresence>
+          {showLoginModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={() => setShowLoginModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-sm"
               >
-                {loginPhrases[currentPhrase]}
-              </motion.p>
-            </AnimatePresence>
-            <div className="flex gap-2">
-              {loginPhrases.map((_, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "h-1 rounded-full transition-all duration-500",
-                    i === currentPhrase ? "w-8 bg-brand-primary" : "w-4 bg-brand-nude/40"
-                  )}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="relative z-10">
-            <p className="text-sm text-brand-metallic font-medium">
-              ✨ Mais de 500 clientes satisfeitas
-            </p>
-            <div className="flex -space-x-2 mt-3">
-              {[1,2,3,4,5].map(i => (
-                <div key={i} className="w-8 h-8 rounded-full bg-white/60 border-2 border-white flex items-center justify-center text-xs">
-                  {['💖','🌸','✨','💎','🌹'][i-1]}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side - Login Form */}
-        <div className="flex-1 flex items-center justify-center p-6 sm:p-8">
-          <div className="w-full max-w-md">
-            {/* Mobile Logo */}
-            <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-2xl bg-brand-blush flex items-center justify-center text-brand-primary">
-                <Sparkles size={24} />
-              </div>
-              <h1 className="text-2xl font-bold text-brand-primary font-serif italic">Glow Bella</h1>
-            </div>
-
-            {/* Rotating Phrase (Mobile) */}
-            <div className="lg:hidden mb-8 text-center">
-              <AnimatePresence mode="wait">
-                <motion.p
-                  key={currentPhrase}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.4 }}
-                  className="text-lg font-serif italic text-brand-metallic"
-                >
-                  {loginPhrases[currentPhrase]}
-                </motion.p>
-              </AnimatePresence>
-            </div>
-
-            <Card className="border-none shadow-luxury rounded-3xl overflow-hidden bg-white">
-              <div className="h-2 bg-gradient-to-r from-brand-primary via-brand-soft to-brand-blush" />
-              <CardContent className="p-8 text-center space-y-6">
-                <div className="w-16 h-16 rounded-2xl bg-brand-blush/50 flex items-center justify-center text-brand-primary mx-auto">
-                  <Lock size={28} strokeWidth={1.5} />
-                </div>
-                
-                <div>
-                  <h2 className="text-xl font-bold text-brand-ink font-serif italic">Area Administrativa</h2>
-                  <p className="text-sm text-brand-metallic mt-1">Acesso exclusivo para gestores da Glow Bella</p>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="password" className="text-left text-[10px] uppercase font-black text-brand-metallic tracking-widest">Senha Admin</Label>
-                    <Input 
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); setLoginError(''); }}
-                      onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                      placeholder="Digite a senha de acesso"
-                      className="h-14 rounded-xl border-brand-nude bg-brand-offwhite/50 focus-visible:ring-brand-primary text-center tracking-widest"
-                    />
-                    {loginError && (
-                      <motion.p 
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-red-500 text-xs font-medium"
+                <Card className="border-none shadow-2xl rounded-3xl overflow-hidden bg-white">
+                  <div className="h-2 bg-gradient-to-r from-brand-primary via-brand-soft to-brand-blush" />
+                  <CardContent className="p-8 text-center space-y-6">
+                    <div className="w-16 h-16 rounded-2xl bg-brand-blush/50 flex items-center justify-center text-brand-primary mx-auto">
+                      <Lock size={28} strokeWidth={1.5} />
+                    </div>
+                    
+                    <div>
+                      <h2 className="text-xl font-bold text-brand-ink font-serif italic">Area Administrativa</h2>
+                      <p className="text-sm text-brand-metallic mt-1">Acesso exclusivo para gestores</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="password" className="text-left text-[10px] uppercase font-black text-brand-metallic tracking-widest">Senha Admin</Label>
+                        <Input 
+                          id="password"
+                          type="password"
+                          value={password}
+                          onChange={(e) => { setPassword(e.target.value); setLoginError(''); }}
+                          onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                          placeholder="Digite a senha de acesso"
+                          className="h-14 rounded-xl border-brand-nude bg-brand-offwhite/50 focus-visible:ring-brand-primary text-center tracking-widest"
+                        />
+                        {loginError && (
+                          <motion.p 
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-red-500 text-xs font-medium"
+                          >
+                            {loginError}
+                          </motion.p>
+                        )}
+                      </div>
+                      <Button 
+                        onClick={handleLogin} 
+                        className="w-full h-14 bg-brand-primary hover:bg-brand-primary/90 text-white rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-brand-primary/20 transition-all active:scale-[0.98]"
                       >
-                        {loginError}
-                      </motion.p>
-                    )}
-                  </div>
-                  <Button 
-                    onClick={handleLogin} 
-                    className="w-full h-14 bg-brand-primary hover:bg-brand-primary/90 text-white rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-brand-primary/20 transition-all active:scale-[0.98]"
-                  >
-                    <Lock size={18} />
-                    Acessar Painel
-                  </Button>
-                </div>
+                        <Lock size={18} />
+                        Acessar Painel
+                      </Button>
+                    </div>
 
-                <Separator className="bg-brand-nude/30" />
-
-                <div className="space-y-3">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => setCurrentView('store')}
-                    className="w-full text-brand-metallic hover:text-brand-primary hover:bg-brand-blush/30 h-12 rounded-xl font-medium"
-                  >
-                    <ShoppingCart size={18} className="mr-2" />
-                    Ver a Loja Online
-                  </Button>
-                  <p className="text-[10px] text-brand-metallic/60">
-                    E cliente? Explore nossos produtos exclusivos ✨
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => setShowLoginModal(false)}
+                      className="w-full text-brand-metallic hover:text-brand-ink h-10 rounded-xl font-medium text-sm"
+                    >
+                      Voltar para a Loja
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
 
+  // Admin Dashboard Layout
   const user = getCurrentUser();
 
   const navItems = [
