@@ -39,7 +39,7 @@ import { Product, Settings } from "@/src/types";
 import { useLocalDB } from '@/src/lib/useLocalDB';
 import { cn } from "@/lib/utils";
 import AISocialMedia from '@/src/components/AISocialMedia';
-import { analyzeProductImage, isAIConfigured } from '@/src/lib/gemini';
+import { analyzeProductImage, isAIConfigured, generateDescriptionFromName } from '@/src/lib/gemini';
 import { enhanceProductImage } from '@/src/lib/imageGenerator';
 
 const DEFAULT_SETTINGS: Settings = {
@@ -95,6 +95,7 @@ export default function InventoryView() {
   const [imageEnhanced, setImageEnhanced] = useState(false);
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [imageEnhancing, setImageEnhancing] = useState(false);
+  const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -114,6 +115,30 @@ export default function InventoryView() {
       }));
     }
   }, [settings.defaultMarkup]);
+
+  // Auto-generate description when name changes (debounced)
+  useEffect(() => {
+    if (!formData.name || editingProduct || !formData.description || isGeneratingDesc) return;
+    
+    // Only generate if description is empty or looks like a placeholder
+    if (formData.description.length > 5) return;
+
+    const timer = setTimeout(async () => {
+      setIsGeneratingDesc(true);
+      try {
+        const desc = await generateDescriptionFromName(formData.name);
+        if (desc) {
+          setFormData(prev => ({ ...prev, description: desc }));
+        }
+      } catch (err) {
+        console.error('Auto-desc error:', err);
+      } finally {
+        setIsGeneratingDesc(false);
+      }
+    }, 1500); // Wait 1.5s after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [formData.name]);
 
   const calculateSellPrice = (cost: number, markup: number) => {
     return cost * (1 + markup / 100);
@@ -309,13 +334,23 @@ export default function InventoryView() {
     setIsModalOpen(true);
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Metrics Calculation
+  const totalInvested = products.reduce((acc, p) => acc + (p.costPrice * p.stockQuantity), 0);
+  const totalSalesValue = products.reduce((acc, p) => acc + (p.sellPrice * p.stockQuantity), 0);
+  const netProfit = totalSalesValue - totalInvested;
+  const totalUnits = products.reduce((acc, p) => acc + p.stockQuantity, 0);
+  const diversity = products.length;
+
+  // Alphabetical Sorting
+  const filteredProducts = products
+    .filter(p => 
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      p.category.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold font-serif italic text-brand-ink">Boutique de Produtos</h1>
@@ -611,6 +646,51 @@ export default function InventoryView() {
             </DialogContent>
           </Dialog>
         </div>
+      </div>
+
+      {/* Financial Metrics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-none shadow-sm bg-white rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-brand-blush/30 flex items-center justify-center text-brand-primary">
+              <Package size={16} />
+            </div>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Investido</span>
+          </div>
+          <p className="text-xl font-bold text-brand-ink">R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-white rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-brand-blush/30 flex items-center justify-center text-brand-primary">
+              <TrendingUp size={16} />
+            </div>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Valor de Venda</span>
+          </div>
+          <p className="text-xl font-bold text-brand-ink">R$ {totalSalesValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-white rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
+              <Calculator size={16} />
+            </div>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Lucro Líquido</span>
+          </div>
+          <p className={cn("text-xl font-bold", netProfit >= 0 ? "text-green-600" : "text-red-500")}>
+            R$ {netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </p>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-white rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-brand-blush/30 flex items-center justify-center text-brand-primary">
+              <Sparkles size={16} />
+            </div>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Estoque</span>
+          </div>
+          <p className="text-xl font-bold text-brand-ink">{totalUnits} un <span className="text-sm font-normal text-gray-400">({diversity} tipos)</span></p>
+        </Card>
       </div>
 
       <Card className="border-none shadow-luxury overflow-hidden bg-white rounded-[2.5rem] border border-brand-nude/20">

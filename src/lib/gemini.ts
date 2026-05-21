@@ -110,6 +110,22 @@ Não inclua markdown ou código, apenas o JSON puro.`
   }
 }
 
+export async function generateDescriptionFromName(productName: string): Promise<string> {
+  if (!productName) return '';
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: `Crie uma descrição de venda curta, carinhosa e sofisticada para o produto "${productName}" da loja Glow Bella Cosméticos.
+Use emojis delicados e um tom acolhedor. Máximo 100 caracteres. Apenas a descrição.`
+    });
+    return response.text.trim();
+  } catch (err) {
+    console.error('AI description generation failed:', err);
+    return '';
+  }
+}
+
 export function isAIConfigured(): boolean {
   return true;
 }
