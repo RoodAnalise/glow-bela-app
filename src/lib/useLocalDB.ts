@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAll, add, update, remove } from './localDB';
 
-type StoreName = 'products' | 'customers' | 'sales' | 'settings';
+type StoreName = 'products' | 'customers' | 'sales' | 'settings' | 'orders';
 
 const listeners: Record<string, Set<() => void>> = {};
 
@@ -17,33 +17,26 @@ export const useLocalDB = <T extends { id?: string }>(storeName: StoreName) => {
   const fetchData = useCallback(async () => {
     const items = await getAll<T>(storeName);
     setData(items);
+    notify(storeName);
   }, [storeName]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  useEffect(() => {
-    if (!listeners[storeName]) {
-      listeners[storeName] = new Set();
-    }
-    const handleNotify = () => fetchData();
-    listeners[storeName].add(handleNotify);
-    return () => {
-      listeners[storeName].delete(handleNotify);
-    };
-  }, [storeName, fetchData]);
-
   const subscribe = useCallback((callback: (data: T[]) => void) => {
-    setData(callback(data));
+    callback(data);
+
     const handler = async () => {
       const items = await getAll<T>(storeName);
       callback(items);
     };
+
     if (!listeners[storeName]) {
       listeners[storeName] = new Set();
     }
     listeners[storeName].add(handler);
+
     return () => {
       listeners[storeName].delete(handler);
     };

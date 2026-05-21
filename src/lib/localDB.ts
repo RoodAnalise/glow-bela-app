@@ -36,7 +36,7 @@ async function add<T extends { id?: string }>(storeName: StoreName, data: T): Pr
   return new Promise((resolve, reject) => {
     const tx = db.transaction(storeName, 'readwrite');
     const store = tx.objectStore(storeName);
-    const id = crypto.randomUUID();
+    const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const entry = { ...data, id, createdAt: Date.now() };
     const request = store.add(entry);
     request.onsuccess = () => resolve(id);
