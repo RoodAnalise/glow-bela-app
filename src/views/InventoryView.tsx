@@ -225,11 +225,25 @@ export default function InventoryView() {
     try {
       const analysis = await analyzeProductImage(imageUrl);
       if (analysis.name) {
+        const productName = analysis.name || formData.name || '';
+        let description = analysis.description || '';
+        
+        if (productName) {
+          try {
+            const aiDesc = await generateDescriptionFromName(productName);
+            if (aiDesc) {
+              description = aiDesc;
+            }
+          } catch (e) {
+            console.error('Erro ao gerar descricao:', e);
+          }
+        }
+
         setFormData(prev => ({
           ...prev,
-          name: analysis.name,
-          category: analysis.category,
-          description: analysis.description,
+          name: productName,
+          category: analysis.category || prev.category,
+          description: description,
         }));
         toast.success('Produto reanalisado pela IA!');
       } else {
@@ -422,27 +436,27 @@ export default function InventoryView() {
                 Novo Produto
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[720px] rounded-3xl border-none shadow-2xl p-0 overflow-hidden max-h-[90vh] overflow-y-auto bg-white">
+            <DialogContent className="sm:max-w-[720px] w-[95vw] max-w-full rounded-3xl sm:rounded-3xl border-none shadow-2xl p-0 overflow-hidden max-h-[90vh] overflow-y-auto bg-white">
               {/* Header with gradient */}
-              <div className="bg-gradient-to-r from-brand-primary to-brand-soft p-6 pb-5">
+              <div className="bg-gradient-to-r from-brand-primary to-brand-soft p-4 sm:p-6 pb-4 sm:pb-5">
                 <DialogHeader>
-                  <DialogTitle className="text-xl font-bold text-white flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Package size={20} strokeWidth={1.5} className="text-white" />
+                  <DialogTitle className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 sm:gap-3">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+                      <Package size={18} strokeWidth={1.5} className="text-white" />
                     </div>
-                    {editingProduct ? 'Editar Produto' : 'Novo Produto'}
+                    <span className="truncate">{editingProduct ? 'Editar Produto' : 'Novo Produto'}</span>
                   </DialogTitle>
-                  <p className="text-xs text-white/80 font-medium mt-1 ml-[52px]">
+                  <p className="text-[11px] sm:text-xs text-white/80 font-medium mt-1 ml-[44px] sm:ml-[52px]">
                     {editingProduct ? 'Atualize as informações do produto' : 'Preencha os dados para cadastrar no estoque e na loja'}
                   </p>
                 </DialogHeader>
               </div>
 
-              <div className="px-6 py-5 space-y-5">
+              <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
                 {/* Step 1: Image Upload */}
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 rounded-full bg-brand-primary text-white flex items-center justify-center text-xs font-bold">1</div>
+                    <div className="w-6 h-6 rounded-full bg-brand-primary text-white flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
                     <Label className="text-sm font-bold text-brand-ink">Foto do Produto</Label>
                     {isAIConfigured() && (
                       <span className="text-[10px] bg-brand-blush text-brand-primary px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
@@ -450,9 +464,9 @@ export default function InventoryView() {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col sm:flex-row items-start gap-4">
                     {imagePreview ? (
-                      <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-brand-nude/30 group flex-shrink-0">
+                      <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 border-brand-nude/30 group flex-shrink-0">
                         <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                         {imageEnhancing && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -477,7 +491,7 @@ export default function InventoryView() {
                     ) : (
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-24 h-24 rounded-xl border-2 border-dashed border-brand-nude/50 bg-gray-50 flex flex-col items-center justify-center gap-1 hover:border-brand-primary hover:bg-brand-blush/10 transition-all cursor-pointer flex-shrink-0"
+                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl border-2 border-dashed border-brand-nude/50 bg-gray-50 flex flex-col items-center justify-center gap-1 hover:border-brand-primary hover:bg-brand-blush/10 transition-all cursor-pointer flex-shrink-0"
                       >
                         {aiAnalyzing ? (
                           <div className="animate-spin w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full" />
@@ -489,7 +503,7 @@ export default function InventoryView() {
                         )}
                       </button>
                     )}
-                    <div className="flex-1 space-y-3">
+                    <div className="flex-1 w-full space-y-3">
                       <div>
                         <Label className="text-xs font-semibold text-brand-ink mb-1 block">Nome do Produto</Label>
                         <Input 
@@ -523,7 +537,7 @@ export default function InventoryView() {
                         variant="outline"
                         onClick={handleReloadWithAI}
                         disabled={reloadingWithAI}
-                        className="h-10 px-4 rounded-lg border-brand-primary/30 text-brand-primary hover:bg-brand-blush/50 text-xs font-bold flex items-center gap-2 flex-shrink-0"
+                        className="h-10 px-4 rounded-lg border-brand-primary/30 text-brand-primary hover:bg-brand-blush/50 text-xs font-bold flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-center"
                       >
                         {reloadingWithAI ? (
                           <div className="animate-spin w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full" />
@@ -539,10 +553,10 @@ export default function InventoryView() {
                 {/* Step 2: Category & Stock */}
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 rounded-full bg-brand-primary text-white flex items-center justify-center text-xs font-bold">2</div>
+                    <div className="w-6 h-6 rounded-full bg-brand-primary text-white flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
                     <Label className="text-sm font-bold text-brand-ink">Categoria e Estoque</Label>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <Label className="text-xs font-semibold text-brand-ink mb-1 block">Categoria</Label>
                       <Input 
@@ -567,7 +581,7 @@ export default function InventoryView() {
                 {/* Step 3: Pricing */}
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 rounded-full bg-brand-primary text-white flex items-center justify-center text-xs font-bold">3</div>
+                    <div className="w-6 h-6 rounded-full bg-brand-primary text-white flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
                     <Label className="text-sm font-bold text-brand-ink">Preço e Margem</Label>
                     {formData.costPrice > 0 && formData.sellPrice > formData.costPrice && (
                       <span className="ml-auto text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -575,8 +589,8 @@ export default function InventoryView() {
                       </span>
                     )}
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-100">
-                    <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-gray-50 rounded-xl p-3 sm:p-4 space-y-3 border border-gray-100">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <Label className="text-[10px] uppercase font-semibold text-gray-500 mb-1 block">Custo (R$)</Label>
                         <Input 
@@ -619,16 +633,16 @@ export default function InventoryView() {
 
                 {/* Preview Card */}
                 {formData.name && (
-                  <div className="p-4 bg-brand-blush/20 rounded-xl border border-brand-nude/20">
+                  <div className="p-3 sm:p-4 bg-brand-blush/20 rounded-xl border border-brand-nude/20">
                     <div className="flex items-center gap-2 text-brand-primary font-bold text-xs mb-2">
                       <Eye size={14} />
                       Preview na Loja
                     </div>
                     <div className="flex items-center gap-3">
                       {imagePreview ? (
-                        <img src={imagePreview} alt={formData.name} className="w-14 h-14 rounded-lg object-cover border border-brand-nude/30" />
+                        <img src={imagePreview} alt={formData.name} className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover border border-brand-nude/30 flex-shrink-0" />
                       ) : (
-                        <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
                           <Package size={18} className="text-gray-300" />
                         </div>
                       )}
@@ -652,7 +666,7 @@ export default function InventoryView() {
                       </div>
                       {formData.stockQuantity !== undefined && (
                         <span className={cn(
-                          "px-2 py-1 rounded-lg text-[10px] font-bold",
+                          "px-2 py-1 rounded-lg text-[10px] font-bold flex-shrink-0",
                           formData.stockQuantity <= 0 ? "bg-red-50 text-red-500" :
                           formData.stockQuantity <= 5 ? "bg-amber-50 text-amber-600" :
                           "bg-green-50 text-green-600"
@@ -665,9 +679,9 @@ export default function InventoryView() {
                 )}
               </div>
 
-              <DialogFooter className="px-6 py-4 bg-gray-50 border-t border-gray-100 gap-3">
-                <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="rounded-lg text-gray-500 hover:text-brand-ink font-medium">Cancelar</Button>
-                <Button onClick={handleSave} className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-lg px-6 h-11 font-bold shadow-lg shadow-brand-primary/20 transition-all active:scale-95">
+              <DialogFooter className="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 border-t border-gray-100 gap-2 sm:gap-3">
+                <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="rounded-lg text-gray-500 hover:text-brand-ink font-medium text-sm">Cancelar</Button>
+                <Button onClick={handleSave} className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-lg px-6 h-11 font-bold shadow-lg shadow-brand-primary/20 transition-all active:scale-95 text-sm">
                   {editingProduct ? 'Salvar Alterações' : 'Cadastrar Produto'}
                 </Button>
               </DialogFooter>
