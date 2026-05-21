@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, uploadImage } from './supabase';
 
-// Mapeamento: Nome que o site usa -> Nome da tabela no banco
+// Mapeamento de tabelas: o site usa nomes em inglês, o banco também.
+// Se o seu banco foi criado com nomes em português, altere os valores aqui.
+// Exemplo: products: 'produtos'
 const TABLE_MAP: Record<string, string> = {
-  products: 'produtos',
-  customers: 'clientes',
-  orders: 'pedidos',
-  settings: 'configuracoes',
+  products: 'products',
+  customers: 'customers',
+  orders: 'orders',
+  settings: 'settings',
 };
 
 export const useSupabaseDB = <T extends { id?: string }>(storeName: string) => {
@@ -21,61 +23,25 @@ export const useSupabaseDB = <T extends { id?: string }>(storeName: string) => {
       const { data: items, error } = await supabase
         .from(tableName)
         .select('*')
-        .order('nome', { ascending: true });
+        .order('name', { ascending: true });
 
       if (error) throw error;
 
-      // TRADUZIR de Português (Banco) para Inglês (Site)
+      // TRADUZIR de snake_case (Banco) para camelCase (Site)
       const translatedItems = (items || []).map((item: any) => {
         if (storeName === 'products') {
           return {
             id: item.id,
-            name: item.nome,
-            description: item.descricao,
-            category: item.categoria,
-            costPrice: item.preco_de_custo,
-            markupPercent: item.porcentagem_de_margem,
-            sellPrice: item.preco_de_venda,
-            stockQuantity: item.quantidade_em_estoque,
-            discountPercent: item.porcentagem_de_desconto,
-            imageUrl: item.url_da_imagem,
-            createdAt: item.criado_em,
-          };
-        }
-        if (storeName === 'customers') {
-          return {
-            id: item.id,
-            name: item.nome,
-            phone: item.telefone,
-            email: item.email,
-            address: item.endereco,
-            source: item.origem,
-            createdAt: item.criado_em,
-          };
-        }
-        if (storeName === 'orders') {
-          return {
-            id: item.id,
-            customerName: item.nome_do_cliente,
-            customerPhone: item.telefone_do_cliente,
-            items: item.itens,
-            totalAmount: item.valor_total,
-            discountAmount: item.valor_do_desconto,
-            paymentMethod: item.metodo_de_pagamento,
-            notes: item.observacoes,
-            status: item.status,
-            createdAt: item.criado_em,
-          };
-        }
-        if (storeName === 'settings') {
-          return {
-            id: item.id,
-            defaultMarkup: item.margem_padrao,
-            storeName: item.nome_da_loja,
-            currency: item.moeda,
-            whatsappNumber: item.numero_do_whatsapp,
-            storeDescription: item.descricao_da_loja,
-            createdAt: item.criado_em,
+            name: item.name,
+            description: item.description,
+            category: item.category,
+            costPrice: item.cost_price,
+            markupPercent: item.markup_percent,
+            sellPrice: item.sell_price,
+            stockQuantity: item.stock_quantity,
+            discountPercent: item.discount_percent,
+            imageUrl: item.image_url,
+            createdAt: item.created_at,
           };
         }
         return item;
@@ -101,42 +67,21 @@ export const useSupabaseDB = <T extends { id?: string }>(storeName: string) => {
         imageUrl = await uploadImage(imageFile, fileName) || '';
       }
 
-      // TRADUZIR de Inglês (Site) para Português (Banco) antes de salvar
+      // TRADUZIR de camelCase (Site) para snake_case (Banco)
       const itemToSave: any = {
-        criado_em: new Date().toISOString(),
-        url_da_imagem: imageUrl,
+        created_at: new Date().toISOString(),
+        image_url: imageUrl,
       };
 
       if (storeName === 'products') {
-        itemToSave.nome = itemData.name;
-        itemToSave.descricao = itemData.description;
-        itemToSave.categoria = itemData.category;
-        itemToSave.preco_de_custo = itemData.costPrice;
-        itemToSave.porcentagem_de_margem = itemData.markupPercent;
-        itemToSave.preco_de_venda = itemData.sellPrice;
-        itemToSave.quantidade_em_estoque = itemData.stockQuantity;
-        itemToSave.porcentagem_de_desconto = itemData.discountPercent;
-      } else if (storeName === 'customers') {
-        itemToSave.nome = itemData.name;
-        itemToSave.telefone = itemData.phone;
-        itemToSave.email = itemData.email;
-        itemToSave.endereco = itemData.address;
-        itemToSave.origem = itemData.source;
-      } else if (storeName === 'orders') {
-        itemToSave.nome_do_cliente = itemData.customerName;
-        itemToSave.telefone_do_cliente = itemData.customerPhone;
-        itemToSave.itens = itemData.items;
-        itemToSave.valor_total = itemData.totalAmount;
-        itemToSave.valor_do_desconto = itemData.discountAmount;
-        itemToSave.metodo_de_pagamento = itemData.paymentMethod;
-        itemToSave.observacoes = itemData.notes;
-        itemToSave.status = itemData.status;
-      } else if (storeName === 'settings') {
-        itemToSave.margem_padrao = itemData.defaultMarkup;
-        itemToSave.nome_da_loja = itemData.storeName;
-        itemToSave.moeda = itemData.currency;
-        itemToSave.numero_do_whatsapp = itemData.whatsappNumber;
-        itemToSave.descricao_da_loja = itemData.storeDescription;
+        itemToSave.name = itemData.name;
+        itemToSave.description = itemData.description;
+        itemToSave.category = itemData.category;
+        itemToSave.cost_price = itemData.costPrice;
+        itemToSave.markup_percent = itemData.markupPercent;
+        itemToSave.sell_price = itemData.sellPrice;
+        itemToSave.stock_quantity = itemData.stockQuantity;
+        itemToSave.discount_percent = itemData.discountPercent;
       } else {
         Object.assign(itemToSave, itemData);
       }
@@ -164,40 +109,19 @@ export const useSupabaseDB = <T extends { id?: string }>(storeName: string) => {
       }
 
       const itemToUpdate: any = {
-        atualizado_em: new Date().toISOString(),
-        url_da_imagem: imageUrl,
+        updated_at: new Date().toISOString(),
+        image_url: imageUrl,
       };
 
       if (storeName === 'products') {
-        itemToUpdate.nome = itemData.name;
-        itemToUpdate.descricao = itemData.description;
-        itemToUpdate.categoria = itemData.category;
-        itemToUpdate.preco_de_custo = itemData.costPrice;
-        itemToUpdate.porcentagem_de_margem = itemData.markupPercent;
-        itemToUpdate.preco_de_venda = itemData.sellPrice;
-        itemToUpdate.quantidade_em_estoque = itemData.stockQuantity;
-        itemToUpdate.porcentagem_de_desconto = itemData.discountPercent;
-      } else if (storeName === 'customers') {
-        itemToUpdate.nome = itemData.name;
-        itemToUpdate.telefone = itemData.phone;
-        itemToUpdate.email = itemData.email;
-        itemToUpdate.endereco = itemData.address;
-        itemToUpdate.origem = itemData.source;
-      } else if (storeName === 'orders') {
-        itemToUpdate.nome_do_cliente = itemData.customerName;
-        itemToUpdate.telefone_do_cliente = itemData.customerPhone;
-        itemToUpdate.itens = itemData.items;
-        itemToUpdate.valor_total = itemData.totalAmount;
-        itemToUpdate.valor_do_desconto = itemData.discountAmount;
-        itemToUpdate.metodo_de_pagamento = itemData.paymentMethod;
-        itemToUpdate.observacoes = itemData.notes;
-        itemToUpdate.status = itemData.status;
-      } else if (storeName === 'settings') {
-        itemToUpdate.margem_padrao = itemData.defaultMarkup;
-        itemToUpdate.nome_da_loja = itemData.storeName;
-        itemToUpdate.moeda = itemData.currency;
-        itemToUpdate.numero_do_whatsapp = itemData.whatsappNumber;
-        itemToUpdate.descricao_da_loja = itemData.storeDescription;
+        itemToUpdate.name = itemData.name;
+        itemToUpdate.description = itemData.description;
+        itemToUpdate.category = itemData.category;
+        itemToUpdate.cost_price = itemData.costPrice;
+        itemToUpdate.markup_percent = itemData.markupPercent;
+        itemToUpdate.sell_price = itemData.sellPrice;
+        itemToUpdate.stock_quantity = itemData.stockQuantity;
+        itemToUpdate.discount_percent = itemData.discountPercent;
       } else {
         Object.assign(itemToUpdate, itemData);
       }
