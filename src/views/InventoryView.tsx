@@ -290,9 +290,18 @@ export default function InventoryView() {
     }
 
     try {
+      console.log('=== DEBUG handleSave ===');
+      console.log('editingProduct:', editingProduct);
+      console.log('formData.imageUrls:', formData.imageUrls);
+      console.log('newImageFiles:', newImageFiles);
+      console.log('imagePreviews:', imagePreviews);
+
       // Separar URLs existentes (HTTP) dos novos (base64)
       const existingUrls = (formData.imageUrls || []).filter(u => u.startsWith('http'));
       const base64Previews = (formData.imageUrls || []).filter(u => u.startsWith('data:'));
+
+      console.log('existingUrls:', existingUrls);
+      console.log('base64Previews:', base64Previews);
 
       let finalImageUrls = [...existingUrls];
 
@@ -301,12 +310,14 @@ export default function InventoryView() {
         const productId = editingProduct?.id || `prod-${Date.now()}`;
         const { uploadMultipleImages } = await import('@/src/lib/supabase');
         const uploadedUrls = await uploadMultipleImages(newImageFiles, productId);
+        console.log('uploadedUrls:', uploadedUrls);
         if (uploadedUrls.length > 0) {
           finalImageUrls = [...finalImageUrls, ...uploadedUrls];
         }
       }
       // Fallback: se tem base64 mas nao tem arquivos, tenta converter (funciona para novos e editados)
       else if (base64Previews.length > 0 && existingUrls.length === 0) {
+        console.log('Convertendo base64 para upload...');
         const productId = editingProduct?.id || `prod-${Date.now()}`;
         const { uploadImage } = await import('@/src/lib/supabase');
         for (let i = 0; i < base64Previews.length; i++) {
@@ -314,11 +325,12 @@ export default function InventoryView() {
           const blob = await response.blob();
           const file = new File([blob], `image-${i}.jpg`, { type: 'image/jpeg' });
           const url = await uploadImage(file, `${productId}-${Date.now()}-${i}.jpg`);
+          console.log('base64 upload result:', url);
           if (url) finalImageUrls.push(url);
         }
       }
 
-      console.log('Salvando produto com imagens:', finalImageUrls);
+      console.log('finalImageUrls:', finalImageUrls);
 
       const productData = {
         name: formData.name.trim(),
@@ -331,6 +343,8 @@ export default function InventoryView() {
         discountPercent: formData.discountPercent || 0,
         imageUrls: finalImageUrls,
       };
+
+      console.log('productData sendo enviado:', productData);
 
       if (editingProduct?.id) {
         await updateSupabase(editingProduct.id, productData);

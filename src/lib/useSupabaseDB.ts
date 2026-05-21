@@ -252,6 +252,10 @@ export const useSupabaseDB = <T extends { id?: string }>(storeName: string) => {
 
   const update = async (id: string, itemData: any, imageFile?: File): Promise<void> => {
     try {
+      console.log('=== DEBUG update ===');
+      console.log('id:', id);
+      console.log('itemData:', itemData);
+      
       let imageUrl = itemData.imageUrl || '';
       if (imageFile) {
         const fileName = `${Date.now()}-${imageFile.name}`;
@@ -265,8 +269,15 @@ export const useSupabaseDB = <T extends { id?: string }>(storeName: string) => {
       delete itemToUpdate.criado_em;
       delete itemToUpdate.created_at;
 
+      console.log('tableName:', tableName);
+      console.log('itemToUpdate:', itemToUpdate);
+
       const { error } = await supabase.from(tableName).update(itemToUpdate).eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
+      console.log('Update realizado com sucesso');
       fetchData();
     } catch (err) {
       console.error(`Erro ao atualizar em ${storeName}:`, err);
