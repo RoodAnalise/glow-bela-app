@@ -116,8 +116,22 @@ export async function generateDescriptionFromName(productName: string): Promise<
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
-      contents: `Crie uma descrição de venda curta, carinhosa e sofisticada para o produto "${productName}" da loja Glow Bella Cosméticos.
-Use emojis delicados e um tom acolhedor. Máximo 100 caracteres. Apenas a descrição.`
+      contents: `Você é uma copywriter especializada em cosméticos de luxo para a marca Glow Bella Cosméticos.
+
+Crie uma descrição de venda CURTA, CARINHOSA e SOFISTICADA para o produto: "${productName}"
+
+Regras:
+- Máximo 120 caracteres
+- Tom acolhedor, feminino e elegante
+- Use 1-2 emojis delicados (✨💖🌸💫🌿)
+- Destaque benefícios de forma sutil
+- Linguagem moderna e acessível
+- APENAS a descrição, sem aspas ou texto extra
+
+Exemplos de tom:
+- "Sérum Vitamina C" → "Ilumina sua pele com o poder da vitamina C! ✨ Toque aveludado e brilho natural que você merece 💖"
+- "Batom Matte" → "Cor intensa e duradoura que acompanha seu dia! 💋 Matte confortável que não resseca os lábios 🌸"
+- "Hidratante Facial" → "Hidratação profunda que sua pele pede! 🌿 Textura leve que absorve rapidinho ✨`
     });
     return response.text.trim();
   } catch (err) {

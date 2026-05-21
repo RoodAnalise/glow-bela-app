@@ -112,10 +112,10 @@ export default function InventoryView() {
 
   // Auto-generate description when name changes (debounced)
   useEffect(() => {
-    if (!formData.name || editingProduct || !formData.description || isGeneratingDesc) return;
+    if (!formData.name || editingProduct || isGeneratingDesc) return;
     
-    // Only generate if description is empty or looks like a placeholder
-    if (formData.description.length > 5) return;
+    // Only generate if description is empty or very short
+    if (formData.description && formData.description.length > 3) return;
 
     const timer = setTimeout(async () => {
       setIsGeneratingDesc(true);
@@ -123,13 +123,14 @@ export default function InventoryView() {
         const desc = await generateDescriptionFromName(formData.name);
         if (desc) {
           setFormData(prev => ({ ...prev, description: desc }));
+          toast.success('✨ Descrição gerada pela IA!');
         }
       } catch (err) {
         console.error('Auto-desc error:', err);
       } finally {
         setIsGeneratingDesc(false);
       }
-    }, 1500); // Wait 1.5s after user stops typing
+    }, 1000); // Wait 1s after user stops typing
 
     return () => clearTimeout(timer);
   }, [formData.name]);
@@ -606,15 +607,15 @@ export default function InventoryView() {
                                 try {
                                   const desc = await generateDescriptionFromName(formData.name);
                                   if (desc) setFormData(prev => ({ ...prev, description: desc }));
-                                  toast.success('Descricao gerada pelo nome!');
+                                  toast.success('✨ Descrição gerada!');
                                 } catch {
-                                  toast.error('Erro ao gerar descricao');
+                                  toast.error('Erro ao gerar descrição');
                                 } finally {
                                   setIsGeneratingDesc(false);
                                 }
                               }}
                               disabled={isGeneratingDesc}
-                              className="text-[10px] text-brand-primary font-bold flex items-center gap-1 hover:underline disabled:opacity-50"
+                              className="text-[10px] text-brand-primary font-bold flex items-center gap-1 hover:underline disabled:opacity-50 transition-all"
                             >
                               {isGeneratingDesc ? (
                                 <div className="animate-spin w-3 h-3 border-2 border-brand-primary border-t-transparent rounded-full" />
@@ -628,10 +629,15 @@ export default function InventoryView() {
                         <textarea 
                           value={formData.description} 
                           onChange={(e) => setFormData({...formData, description: e.target.value})} 
-                          placeholder="Descreva os benefícios do produto..."
+                          placeholder={formData.name ? "A IA vai gerar automaticamente..." : "Descreva os benefícios do produto..."}
                           rows={2}
                           className="flex w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary resize-none placeholder:text-gray-400"
                         />
+                        {isGeneratingDesc && (
+                          <p className="text-[10px] text-brand-primary mt-1 flex items-center gap-1">
+                            <Sparkles size={10} /> Gerando descrição carinhosa...
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col gap-2 w-full sm:w-auto">
