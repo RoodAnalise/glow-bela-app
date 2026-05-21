@@ -212,8 +212,11 @@ export const useSupabaseDB = <T extends { id?: string }>(storeName: string) => {
         console.warn(`Tabela '${tableName}' falhou (${error.message}). Tentando '${fallbackTableName}'...`);
         const fallback = await supabase.from(fallbackTableName).select('*');
         if (fallback.error) {
-          console.error(`Ambas tabelas falharam para ${storeName}:`, fallback.error.message);
-          throw fallback.error;
+          // Se ambas falharem, tabela não existe - retorna vazio em vez de quebrar
+          console.warn(`Tabela '${storeName}' não existe no banco. Usando dados vazios.`);
+          tableCache[storeName] = { tableName: fallbackTableName, isPT: false };
+          setData([]);
+          return;
         }
         tableName = fallbackTableName;
         isPT = false; // Fallback usa colunas em ingles
@@ -229,6 +232,8 @@ export const useSupabaseDB = <T extends { id?: string }>(storeName: string) => {
       setData(translatedItems);
     } catch (err: any) {
       console.error(`Erro ao buscar ${storeName}:`, err?.message || err);
+      // Em caso de erro critico, retorna vazio
+      setData([]);
     } finally {
       setLoading(false);
     }
