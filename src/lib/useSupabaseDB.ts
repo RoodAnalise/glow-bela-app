@@ -268,19 +268,22 @@ export const useSupabaseDB = <T extends { id?: string }>(storeName: string) => {
       const itemToUpdate = cache?.isPT ? translated.pt : translated.en;
       delete itemToUpdate.criado_em;
       delete itemToUpdate.created_at;
+      delete itemToUpdate.atualizado_em;
+      delete itemToUpdate.updated_at;
 
       console.log('tableName:', tableName);
       console.log('itemToUpdate:', itemToUpdate);
 
-      const { error } = await supabase.from(tableName).update(itemToUpdate).eq('id', id);
+      const { data, error } = await supabase.from(tableName).update(itemToUpdate).eq('id', id).select();
       if (error) {
         console.error('Supabase update error:', error);
         throw error;
       }
-      console.log('Update realizado com sucesso');
+      console.log('Update realizado com sucesso:', data);
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(`Erro ao atualizar em ${storeName}:`, err);
+      throw err;
     }
   };
 

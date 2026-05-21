@@ -355,9 +355,10 @@ export default function InventoryView() {
       }
       setIsModalOpen(false);
       resetForm();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Save error:', err);
-      toast.error("Erro ao salvar produto");
+      const errorMsg = err?.message || err?.error?.message || 'Erro desconhecido';
+      toast.error(`Erro ao salvar: ${errorMsg}`);
     }
   };
 
