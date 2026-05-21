@@ -36,7 +36,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Product, Settings } from "@/src/types";
-import { useLocalDB } from '@/src/lib/useLocalDB';
+import { useSupabaseDB } from '@/src/lib/useSupabaseDB';
 import { cn } from "@/lib/utils";
 import AISocialMedia from '@/src/components/AISocialMedia';
 import { analyzeProductImage, isAIConfigured, generateDescriptionFromName } from '@/src/lib/gemini';
@@ -56,27 +56,10 @@ export default function InventoryView() {
   const [isAISocialOpen, setIsAISocialOpen] = useState(false);
   const [aiProduct, setAIProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
 
-  const { subscribe: subProducts, create, update: updateFirestore, remove } = useLocalDB<Product>('products');
-  const { subscribe: subSettings } = useLocalDB<Settings>('settings');
-  const [products, setProducts] = useState<Product[]>([]);
-
-  useEffect(() => {
-    const unsub = subProducts((data) => {
-      setProducts(data);
-    });
-    return () => unsub();
-  }, []);
-
-  useEffect(() => {
-    const unsub = subSettings((data) => {
-      if (data.length > 0) {
-        setSettings(data[0]);
-      }
-    });
-    return () => unsub();
-  }, []);
+  const { data: products, loading: loadingProducts, create, update: updateSupabase, remove } = useSupabaseDB<Product>('products');
+  const { data: settingsData, loading: loadingSettings } = useSupabaseDB<Settings>('settings');
+  const settings = settingsData?.[0] || DEFAULT_SETTINGS;
 
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
@@ -279,7 +262,7 @@ export default function InventoryView() {
   const handleSaveSettings = async () => {
     try {
       if (settings.id) {
-        await updateFirestore(settings.id, settings);
+        await updateSupabase(settings.id, settings);
       } else {
         await create(settings);
       }
