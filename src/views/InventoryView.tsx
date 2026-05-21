@@ -113,7 +113,7 @@ export default function InventoryView() {
         sellPrice: parseFloat((prev.costPrice * (1 + (settings.defaultMarkup || 50) / 100)).toFixed(2))
       }));
     }
-  }, [settings.defaultMarkup, editingProduct]);
+  }, [settings.defaultMarkup]);
 
   const calculateSellPrice = (cost: number, markup: number) => {
     return cost * (1 + markup / 100);
@@ -138,49 +138,48 @@ export default function InventoryView() {
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const result = reader.result as string;
-        setOriginalImage(result);
-        setImagePreview(result);
-        setFormData({ ...formData, imageUrl: result });
+    if (!file) return;
 
-        setImageEnhancing(true);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const result = reader.result as string;
+      setOriginalImage(result);
+      setImagePreview(result);
+      setFormData(prev => ({ ...prev, imageUrl: result }));
+
+      setImageEnhancing(true);
+      try {
+        const enhanced = await enhanceProductImage(result);
+        setEnhancedImage(enhanced);
+        setImageEnhanced(true);
+        setFormData(prev => ({ ...prev, imageUrl: enhanced }));
+      } catch {
+        setEnhancedImage(result);
+      } finally {
+        setImageEnhancing(false);
+      }
+
+      if (isAIConfigured() && !editingProduct) {
+        setAiAnalyzing(true);
         try {
-          const enhanced = await enhanceProductImage(result);
-          setEnhancedImage(enhanced);
-          setImageEnhanced(true);
-          setFormData(prev => ({ ...prev, imageUrl: enhanced }));
-        } catch {
-          setEnhancedImage(result);
-        } finally {
-          setImageEnhancing(false);
-        }
-
-        if (isAIConfigured() && !editingProduct) {
-          setAiAnalyzing(true);
-          try {
-            const analysis = await analyzeProductImage(result);
-            if (analysis.name) {
-              setFormData(prev => ({
-                ...prev,
-                name: analysis.name,
-                category: analysis.category,
-                description: analysis.description,
-                imageUrl: imageEnhanced ? enhancedImage : result
-              }));
-              toast.success('Produto identificado pela IA!');
-            }
-          } catch (err) {
-            console.error('AI analysis error:', err);
-          } finally {
-            setAiAnalyzing(false);
+          const analysis = await analyzeProductImage(result);
+          if (analysis.name) {
+            setFormData(prev => ({
+              ...prev,
+              name: analysis.name,
+              category: analysis.category,
+              description: analysis.description,
+            }));
+            toast.success('Produto identificado pela IA!');
           }
+        } catch (err) {
+          console.error('AI analysis error:', err);
+        } finally {
+          setAiAnalyzing(false);
         }
-      };
-      reader.readAsDataURL(file);
-    }
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const toggleEnhancedImage = () => {
@@ -197,7 +196,7 @@ export default function InventoryView() {
     setOriginalImage('');
     setEnhancedImage('');
     setImageEnhanced(false);
-    setFormData({ ...formData, imageUrl: '' });
+    setFormData(prev => ({ ...prev, imageUrl: '' }));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -208,22 +207,35 @@ export default function InventoryView() {
     : '0';
 
   const handleSave = async () => {
-    if (!formData.name || !formData.costPrice || formData.sellPrice === undefined) {
-      toast.error("Por favor, preencha os campos obrigatórios");
+    if (!formData.name?.trim()) {
+      toast.error("Digite o nome do produto");
       return;
     }
 
     try {
+      const productData = {
+        name: formData.name.trim(),
+        description: formData.description || '',
+        category: formData.category || '',
+        costPrice: formData.costPrice || 0,
+        markupPercent: formData.markupPercent || 0,
+        sellPrice: formData.sellPrice || 0,
+        stockQuantity: formData.stockQuantity || 0,
+        discountPercent: formData.discountPercent || 0,
+        imageUrl: formData.imageUrl || '',
+      };
+
       if (editingProduct?.id) {
-        await updateFirestore(editingProduct.id, formData);
+        await updateFirestore(editingProduct.id, productData);
         toast.success("Produto atualizado com sucesso");
       } else {
-        await create(formData);
+        await create(productData);
         toast.success("Produto cadastrado com sucesso");
       }
       setIsModalOpen(false);
       resetForm();
     } catch (err) {
+      console.error('Save error:', err);
       toast.error("Erro ao salvar produto");
     }
   };
@@ -266,12 +278,34 @@ export default function InventoryView() {
       imageUrl: ''
     });
     setImagePreview('');
+    setOriginalImage('');
+    setEnhancedImage('');
+    setImageEnhanced(false);
     setEditingProduct(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const startEdit = (product: Product) => {
     setEditingProduct(product);
-    setFormData(product);
+    setFormData({
+      name: product.name || '',
+      description: product.description || '',
+      category: product.category || '',
+      costPrice: product.costPrice || 0,
+      markupPercent: product.markupPercent || 0,
+      sellPrice: product.sellPrice || 0,
+      stockQuantity: product.stockQuantity || 0,
+      discountPercent: product.discountPercent || 0,
+      imageUrl: product.imageUrl || '',
+    });
+    if (product.imageUrl) {
+      setImagePreview(product.imageUrl);
+      setOriginalImage(product.imageUrl);
+      setEnhancedImage(product.imageUrl);
+      setImageEnhanced(false);
+    }
     setIsModalOpen(true);
   };
 
