@@ -24,7 +24,7 @@ const translateFromDB = (storeName: string, item: any) => {
       sellPrice: Number(item.preco_de_venda || item.sell_price || 0),
       stockQuantity: Number(item.quantidade_em_estoque || item.stock_quantity || 0),
       discountPercent: Number(item.porcentagem_de_desconto || item.discount_percent || 0),
-      imageUrl: item.url_da_imagem || item.image_url || '',
+      imageUrls: item.urls_da_imagem || (item.url_da_imagem ? [item.url_da_imagem] : []) || [],
       createdAt: item.criado_em || item.created_at,
     };
   }
@@ -125,8 +125,8 @@ const translateToDB = (storeName: string, itemData: any) => {
 
   if (storeName === 'products') {
     return {
-      pt: { ...basePT, nome: itemData.name, descricao: itemData.description, categoria: itemData.category, preco_de_custo: itemData.costPrice, porcentagem_de_margem: itemData.markupPercent, preco_de_venda: itemData.sellPrice, quantidade_em_estoque: itemData.stockQuantity, porcentagem_de_desconto: itemData.discountPercent },
-      en: { ...baseEN, name: itemData.name, description: itemData.description, category: itemData.category, cost_price: itemData.costPrice, markup_percent: itemData.markupPercent, sell_price: itemData.sellPrice, stock_quantity: itemData.stockQuantity, discount_percent: itemData.discountPercent },
+      pt: { ...basePT, nome: itemData.name, descricao: itemData.description, categoria: itemData.category, preco_de_custo: itemData.costPrice, porcentagem_de_margem: itemData.markupPercent, preco_de_venda: itemData.sellPrice, quantidade_em_estoque: itemData.stockQuantity, porcentagem_de_desconto: itemData.discountPercent, urls_da_imagem: itemData.imageUrls || [] },
+      en: { ...baseEN, name: itemData.name, description: itemData.description, category: itemData.category, cost_price: itemData.costPrice, markup_percent: itemData.markupPercent, sell_price: itemData.sellPrice, stock_quantity: itemData.stockQuantity, discount_percent: itemData.discountPercent, image_urls: itemData.imageUrls || [] },
     };
   }
   if (storeName === 'customers') {

@@ -16,7 +16,9 @@ import {
   CheckCircle2,
   Store,
   Clock,
-  Eye
+  Eye,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +40,7 @@ interface CartItem {
   price: number;
   originalPrice: number;
   discountPercent: number;
-  imageUrl?: string;
+  imageUrls: string[];
   stockQuantity: number;
 }
 
@@ -69,6 +71,8 @@ export default function StorefrontView() {
   const [orderNotes, setOrderNotes] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('pix');
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
+  const [viewingImageIndex, setViewingImageIndex] = useState(0);
+  const [productImageIndexes, setProductImageIndexes] = useState<Record<string, number>>({});
 
   const { data: products, loading: loadingProducts, refresh: refreshProducts } = useSupabaseDB<Product>('products');
   const { data: settingsData } = useSupabaseDB<Settings>('settings');
@@ -84,6 +88,16 @@ export default function StorefrontView() {
     (selectedCategory === 'Todos' || p.category === selectedCategory) &&
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   ).sort((a, b) => a.name.localeCompare(b.name)), [products, searchTerm, selectedCategory]);
+
+  const navigateProductImage = useCallback((productId: string, direction: 'prev' | 'next', totalImages: number) => {
+    setProductImageIndexes(prev => {
+      const current = prev[productId] || 0;
+      if (direction === 'prev') {
+        return { ...prev, [productId]: current === 0 ? totalImages - 1 : current - 1 };
+      }
+      return { ...prev, [productId]: current === totalImages - 1 ? 0 : current + 1 };
+    });
+  }, []);
 
   const addToCart = useCallback((product: Product) => {
     if (product.stockQuantity <= 0) {
@@ -115,7 +129,7 @@ export default function StorefrontView() {
           price: finalPrice,
           originalPrice: product.sellPrice,
           discountPercent: product.discountPercent || 0,
-          imageUrl: product.imageUrl,
+          imageUrls: product.imageUrls || [],
           stockQuantity: product.stockQuantity
         }];
       }
@@ -364,8 +378,35 @@ export default function StorefrontView() {
             return (
               <Card key={product.id} className="border-none shadow-luxury hover:shadow-2xl transition-all duration-500 group rounded-[2rem] lg:rounded-[2.5rem] overflow-hidden bg-white flex flex-col h-full border border-brand-nude/10">
                 <div className="aspect-[4/5] bg-gradient-to-b from-brand-blush/20 to-transparent relative overflow-hidden">
-                  {product.imageUrl ? (
-                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  {product.imageUrls && product.imageUrls.length > 0 ? (
+                    <>
+                      <img 
+                        src={product.imageUrls[productImageIndexes[product.id!] || 0]} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                      />
+                      {product.imageUrls.length > 1 && (
+                        <>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); navigateProductImage(product.id!, 'prev', product.imageUrls.length); }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                          >
+                            <ChevronLeft size={16} />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); navigateProductImage(product.id!, 'next', product.imageUrls.length); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                          >
+                            <ChevronRight size={16} />
+                          </button>
+                          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
+                            {product.imageUrls.map((_, i) => (
+                              <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${(productImageIndexes[product.id!] || 0) === i ? 'bg-white w-3' : 'bg-white/50'}`} />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-700">
                       <ShoppingBag className="text-brand-blush group-hover:text-brand-soft transition-colors duration-500" size={100} strokeWidth={0.5} />
@@ -436,19 +477,19 @@ export default function StorefrontView() {
                           {inCart.quantity}
                         </button>
                       )}
-                      <Button 
-                        size="icon" 
-                        disabled={product.stockQuantity === 0}
-                        className={cn(
-                          "rounded-xl lg:rounded-2xl h-11 w-11 lg:h-14 lg:w-14 transition-all duration-300 shadow-lg",
-                          product.stockQuantity === 0 
-                            ? "bg-brand-nude text-brand-metallic cursor-not-allowed" 
-                            : "bg-brand-ink hover:bg-brand-primary text-white shadow-brand-ink/20"
-                        )}
-                        onClick={() => addToCart(product)}
-                      >
-                        <ShoppingCart size={18} />
-                      </Button>
+                  <Button 
+                    size="icon" 
+                    disabled={product.stockQuantity === 0}
+                    className={cn(
+                      "rounded-xl lg:rounded-2xl h-11 w-11 lg:h-14 lg:w-14 transition-all duration-300 shadow-lg",
+                      product.stockQuantity === 0 
+                        ? "bg-brand-nude text-brand-metallic cursor-not-allowed" 
+                        : "bg-brand-ink hover:bg-brand-primary text-white shadow-brand-ink/20"
+                    )}
+                    onClick={() => { setViewingProduct(product); setViewingImageIndex(0); }}
+                  >
+                    <Eye size={18} />
+                  </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -530,8 +571,8 @@ export default function StorefrontView() {
                   <>
                     {cart.map(item => (
                       <div key={item.productId} className="flex gap-3 p-3 rounded-xl bg-brand-offwhite/50 border border-brand-nude/20">
-                        {item.imageUrl ? (
-                          <img src={item.imageUrl} alt={item.name} className="w-20 h-20 rounded-lg object-cover flex-shrink-0" />
+                        {item.imageUrls && item.imageUrls.length > 0 ? (
+                          <img src={item.imageUrls[0]} alt={item.name} className="w-20 h-20 rounded-lg object-cover flex-shrink-0" />
                         ) : (
                           <div className="w-20 h-20 rounded-lg bg-brand-nude/20 flex items-center justify-center flex-shrink-0">
                             <ShoppingBag size={20} className="text-brand-metallic/40" />
@@ -634,8 +675,25 @@ export default function StorefrontView() {
               className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
             >
               <div className="aspect-square relative">
-                {viewingProduct.imageUrl ? (
-                  <img src={viewingProduct.imageUrl} alt={viewingProduct.name} className="w-full h-full object-cover" />
+                {viewingProduct.imageUrls && viewingProduct.imageUrls.length > 0 ? (
+                  <>
+                    <img src={viewingProduct.imageUrls[viewingImageIndex]} alt={viewingProduct.name} className="w-full h-full object-cover" />
+                    {viewingProduct.imageUrls.length > 1 && (
+                      <>
+                        <button onClick={() => setViewingImageIndex(prev => prev === 0 ? viewingProduct.imageUrls!.length - 1 : prev - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center hover:bg-white">
+                          <ChevronLeft size={20} />
+                        </button>
+                        <button onClick={() => setViewingImageIndex(prev => prev === viewingProduct.imageUrls!.length - 1 ? 0 : prev + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center hover:bg-white">
+                          <ChevronRight size={20} />
+                        </button>
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                          {viewingProduct.imageUrls.map((_, i) => (
+                            <button key={i} onClick={() => setViewingImageIndex(i)} className={`w-2 h-2 rounded-full transition-all ${i === viewingImageIndex ? 'bg-white w-4' : 'bg-white/50'}`} />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
                 ) : (
                   <div className="w-full h-full bg-gradient-to-b from-brand-blush/30 to-transparent flex items-center justify-center">
                     <ShoppingBag size={80} className="text-brand-blush" />

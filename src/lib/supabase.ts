@@ -27,10 +27,36 @@ export async function uploadImage(file: File, fileName: string): Promise<string 
   }
 }
 
+export async function uploadMultipleImages(files: File[], productId: string): Promise<string[]> {
+  const urls: string[] = [];
+  for (let i = 0; i < files.length; i++) {
+    const fileName = `${productId}-${Date.now()}-${i}-${files[i].name}`;
+    const url = await uploadImage(files[i], fileName);
+    if (url) urls.push(url);
+  }
+  return urls;
+}
+
 export async function deleteImage(fileName: string): Promise<void> {
   try {
     await supabase.storage.from('products').remove([fileName]);
   } catch (err) {
     console.error('Image delete failed:', err);
+  }
+}
+
+export async function imageUrlToBase64(url: string): Promise<string> {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (err) {
+    console.error('Failed to convert image URL to base64:', err);
+    return '';
   }
 }

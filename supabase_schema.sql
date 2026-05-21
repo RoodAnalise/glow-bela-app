@@ -16,10 +16,14 @@ CREATE TABLE IF NOT EXISTS produtos (
   preco_de_venda DECIMAL(10, 2) DEFAULT 0,
   quantidade_em_estoque INTEGER DEFAULT 0,
   porcentagem_de_desconto DECIMAL(5, 2) DEFAULT 0,
-  url_da_imagem TEXT,
+  urls_da_imagem TEXT[] DEFAULT '{}',
   criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Se a tabela ja existe, adicione a coluna de imagens multiplas:
+-- ALTER TABLE produtos ADD COLUMN IF NOT EXISTS urls_da_imagem TEXT[] DEFAULT '{}';
+-- ALTER TABLE produtos ADD COLUMN IF NOT EXISTS url_da_imagem TEXT;
 
 -- 2. Tabela de Clientes (da loja)
 CREATE TABLE IF NOT EXISTS clientes (

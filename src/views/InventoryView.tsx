@@ -12,7 +12,10 @@ import {
   ImagePlus,
   X,
   TrendingUp,
-  Eye
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Upload
 } from 'lucide-react';
 import { 
   Table, 
@@ -40,7 +43,7 @@ import { useSupabaseDB } from '@/src/lib/useSupabaseDB';
 import { cn } from "@/lib/utils";
 import AISocialMedia from '@/src/components/AISocialMedia';
 import { analyzeProductImage, isAIConfigured, generateDescriptionFromName } from '@/src/lib/gemini';
-import { enhanceProductImage } from '@/src/lib/imageGenerator';
+import { enhanceProductImage, imageUrlToBase64 } from '@/src/lib/supabase';
 
 const DEFAULT_SETTINGS: Settings = {
   id: 'global',
@@ -70,12 +73,11 @@ export default function InventoryView() {
     sellPrice: 0,
     stockQuantity: 0,
     discountPercent: 0,
-    imageUrl: ''
+    imageUrls: []
   });
-  const [imagePreview, setImagePreview] = useState<string>('');
-  const [originalImage, setOriginalImage] = useState<string>('');
-  const [enhancedImage, setEnhancedImage] = useState<string>('');
-  const [imageEnhanced, setImageEnhanced] = useState(false);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [imageEnhancing, setImageEnhancing] = useState(false);
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
@@ -84,9 +86,12 @@ export default function InventoryView() {
 
   useEffect(() => {
     if (!editingProduct) {
-      setImagePreview('');
-    } else if (editingProduct.imageUrl) {
-      setImagePreview(editingProduct.imageUrl);
+      setImagePreviews([]);
+      setNewImageFiles([]);
+      setCurrentImageIndex(0);
+    } else if (editingProduct.imageUrls && editingProduct.imageUrls.length > 0) {
+      setImagePreviews(editingProduct.imageUrls);
+      setCurrentImageIndex(0);
     }
   }, [editingProduct]);
 
@@ -146,68 +151,68 @@ export default function InventoryView() {
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const result = reader.result as string;
-      setOriginalImage(result);
-      setImagePreview(result);
-      setFormData(prev => ({ ...prev, imageUrl: result }));
+    const newPreviews: string[] = [];
+    const newFiles: File[] = [];
 
-      setImageEnhancing(true);
-      try {
-        const enhanced = await enhanceProductImage(result);
-        setEnhancedImage(enhanced);
-        setImageEnhanced(true);
-        setFormData(prev => ({ ...prev, imageUrl: enhanced }));
-      } catch {
-        setEnhancedImage(result);
-      } finally {
-        setImageEnhancing(false);
-      }
+    for (const file of files) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const result = reader.result as string;
+        newPreviews.push(result);
+        newFiles.push(file);
 
-      if (isAIConfigured() && !editingProduct) {
-        setAiAnalyzing(true);
-        try {
-          const analysis = await analyzeProductImage(result);
-          if (analysis.name) {
-            setFormData(prev => ({
-              ...prev,
-              name: analysis.name,
-              category: analysis.category,
-              description: analysis.description,
-            }));
-            toast.success('Produto identificado pela IA!');
+        if (newPreviews.length === files.length) {
+          const allPreviews = [...imagePreviews, ...newPreviews];
+          setImagePreviews(allPreviews);
+          setNewImageFiles(prev => [...prev, ...newFiles]);
+          setFormData(prev => ({ ...prev, imageUrls: allPreviews }));
+          setCurrentImageIndex(0);
+
+          if (isAIConfigured() && !editingProduct && newPreviews.length > 0) {
+            setAiAnalyzing(true);
+            try {
+              const analysis = await analyzeProductImage(newPreviews[0]);
+              if (analysis.name) {
+                setFormData(prev => ({
+                  ...prev,
+                  name: analysis.name,
+                  category: analysis.category,
+                  description: analysis.description,
+                }));
+                toast.success('Produto identificado pela IA!');
+              }
+            } catch (err) {
+              console.error('AI analysis error:', err);
+            } finally {
+              setAiAnalyzing(false);
+            }
           }
-        } catch (err) {
-          console.error('AI analysis error:', err);
-        } finally {
-          setAiAnalyzing(false);
         }
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const toggleEnhancedImage = () => {
-    if (imageEnhanced) {
-      const newEnhanced = !imageEnhanced;
-      setImageEnhanced(newEnhanced);
-      setImagePreview(newEnhanced ? enhancedImage : originalImage);
-      setFormData(prev => ({ ...prev, imageUrl: newEnhanced ? enhancedImage : originalImage }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const removeImage = () => {
-    setImagePreview('');
-    setOriginalImage('');
-    setEnhancedImage('');
-    setImageEnhanced(false);
-    setFormData(prev => ({ ...prev, imageUrl: '' }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  const removeImage = (index: number) => {
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    const newFiles = newImageFiles.filter((_, i) => i !== index);
+    setImagePreviews(newPreviews);
+    setNewImageFiles(newFiles);
+    setFormData(prev => ({ ...prev, imageUrls: newPreviews }));
+    if (currentImageIndex >= newPreviews.length) {
+      setCurrentImageIndex(Math.max(0, newPreviews.length - 1));
+    }
+  };
+
+  const navigateImage = (direction: 'prev' | 'next') => {
+    if (imagePreviews.length <= 1) return;
+    if (direction === 'prev') {
+      setCurrentImageIndex(prev => (prev === 0 ? imagePreviews.length - 1 : prev - 1));
+    } else {
+      setCurrentImageIndex(prev => (prev === imagePreviews.length - 1 ? 0 : prev + 1));
     }
   };
 
@@ -216,14 +221,23 @@ export default function InventoryView() {
     : '0';
 
   const handleReloadWithAI = async () => {
-    const imageUrl = formData.imageUrl || imagePreview;
+    const imageUrl = imagePreviews[currentImageIndex];
     if (!imageUrl) {
       toast.error('Adicione uma imagem primeiro');
       return;
     }
     setReloadingWithAI(true);
     try {
-      const analysis = await analyzeProductImage(imageUrl);
+      let base64Image = imageUrl;
+      if (imageUrl.startsWith('http')) {
+        base64Image = await imageUrlToBase64(imageUrl);
+      }
+      if (!base64Image) {
+        toast.error('Nao foi possivel carregar a imagem');
+        return;
+      }
+
+      const analysis = await analyzeProductImage(base64Image);
       if (analysis.name) {
         const productName = analysis.name || formData.name || '';
         let description = analysis.description || '';
@@ -231,9 +245,7 @@ export default function InventoryView() {
         if (productName) {
           try {
             const aiDesc = await generateDescriptionFromName(productName);
-            if (aiDesc) {
-              description = aiDesc;
-            }
+            if (aiDesc) description = aiDesc;
           } catch (e) {
             console.error('Erro ao gerar descricao:', e);
           }
@@ -264,6 +276,17 @@ export default function InventoryView() {
     }
 
     try {
+      let finalImageUrls = [...(formData.imageUrls || [])];
+
+      if (newImageFiles.length > 0) {
+        const productId = editingProduct?.id || `prod-${Date.now()}`;
+        const { uploadMultipleImages } = await import('@/src/lib/supabase');
+        const uploadedUrls = await uploadMultipleImages(newImageFiles, productId);
+        if (uploadedUrls.length > 0) {
+          finalImageUrls = [...finalImageUrls.filter(u => u.startsWith('http')), ...uploadedUrls];
+        }
+      }
+
       const productData = {
         name: formData.name.trim(),
         description: formData.description || '',
@@ -273,7 +296,7 @@ export default function InventoryView() {
         sellPrice: formData.sellPrice || 0,
         stockQuantity: formData.stockQuantity || 0,
         discountPercent: formData.discountPercent || 0,
-        imageUrl: formData.imageUrl || '',
+        imageUrls: finalImageUrls,
       };
 
       if (editingProduct?.id) {
@@ -326,12 +349,11 @@ export default function InventoryView() {
       sellPrice: 0,
       stockQuantity: 0,
       discountPercent: 0,
-      imageUrl: ''
+      imageUrls: []
     });
-    setImagePreview('');
-    setOriginalImage('');
-    setEnhancedImage('');
-    setImageEnhanced(false);
+    setImagePreviews([]);
+    setNewImageFiles([]);
+    setCurrentImageIndex(0);
     setEditingProduct(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -349,14 +371,16 @@ export default function InventoryView() {
       sellPrice: product.sellPrice || 0,
       stockQuantity: product.stockQuantity || 0,
       discountPercent: product.discountPercent || 0,
-      imageUrl: product.imageUrl || '',
+      imageUrls: product.imageUrls || [],
     });
-    if (product.imageUrl) {
-      setImagePreview(product.imageUrl);
-      setOriginalImage(product.imageUrl);
-      setEnhancedImage(product.imageUrl);
-      setImageEnhanced(false);
+    if (product.imageUrls && product.imageUrls.length > 0) {
+      setImagePreviews(product.imageUrls);
+      setCurrentImageIndex(0);
+    } else {
+      setImagePreviews([]);
+      setCurrentImageIndex(0);
     }
+    setNewImageFiles([]);
     setIsModalOpen(true);
   };
 
@@ -465,44 +489,53 @@ export default function InventoryView() {
                     )}
                   </div>
                   <div className="flex flex-col sm:flex-row items-start gap-4">
-                    {imagePreview ? (
-                      <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 border-brand-nude/30 group flex-shrink-0">
-                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                        {imageEnhancing && (
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-                          </div>
-                        )}
-                        {imageEnhanced && !imageEnhancing && (
-                          <button
-                            onClick={toggleEnhancedImage}
-                            className="absolute bottom-1 left-1 right-1 px-1 py-0.5 rounded bg-brand-primary/80 text-white text-[7px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            {imageEnhanced ? 'Original' : 'Glow Bella'}
+                    <div className="flex-shrink-0">
+                      {imagePreviews.length > 0 ? (
+                        <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden border-2 border-brand-nude/30 bg-gray-50">
+                          <img src={imagePreviews[currentImageIndex]} alt="Preview" className="w-full h-full object-cover" />
+                          {imagePreviews.length > 1 && (
+                            <>
+                              <button onClick={() => navigateImage('prev')} className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/80 flex items-center justify-center hover:bg-white">
+                                <ChevronLeft size={14} />
+                              </button>
+                              <button onClick={() => navigateImage('next')} className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/80 flex items-center justify-center hover:bg-white">
+                                <ChevronRight size={14} />
+                              </button>
+                              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
+                                {imagePreviews.map((_, i) => (
+                                  <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === currentImageIndex ? 'bg-white' : 'bg-white/50'}`} />
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          <button onClick={() => removeImage(currentImageIndex)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-80 hover:opacity-100">
+                            <X size={10} />
                           </button>
-                        )}
+                        </div>
+                      ) : (
                         <button
-                          onClick={removeImage}
-                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl border-2 border-dashed border-brand-nude/50 bg-gray-50 flex flex-col items-center justify-center gap-1 hover:border-brand-primary hover:bg-brand-blush/10 transition-all cursor-pointer"
                         >
-                          <X size={10} />
+                          {aiAnalyzing ? (
+                            <div className="animate-spin w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full" />
+                          ) : (
+                            <>
+                              <ImagePlus size={20} className="text-brand-metallic/40" />
+                              <span className="text-[8px] uppercase font-bold text-brand-metallic/40">Upload</span>
+                            </>
+                          )}
                         </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl border-2 border-dashed border-brand-nude/50 bg-gray-50 flex flex-col items-center justify-center gap-1 hover:border-brand-primary hover:bg-brand-blush/10 transition-all cursor-pointer flex-shrink-0"
-                      >
-                        {aiAnalyzing ? (
-                          <div className="animate-spin w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full" />
-                        ) : (
-                          <>
-                            <ImagePlus size={20} className="text-brand-metallic/40" />
-                            <span className="text-[8px] uppercase font-bold text-brand-metallic/40">Upload</span>
-                          </>
-                        )}
-                      </button>
-                    )}
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                    </div>
                     <div className="flex-1 w-full space-y-3">
                       <div>
                         <Label className="text-xs font-semibold text-brand-ink mb-1 block">Nome do Produto</Label>
@@ -524,30 +557,47 @@ export default function InventoryView() {
                         />
                       </div>
                     </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                    {imagePreview && isAIConfigured() && (
+                    <div className="flex flex-col gap-2 w-full sm:w-auto">
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={handleReloadWithAI}
-                        disabled={reloadingWithAI}
-                        className="h-10 px-4 rounded-lg border-brand-primary/30 text-brand-primary hover:bg-brand-blush/50 text-xs font-bold flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-center"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-10 px-4 rounded-lg border-brand-nude text-brand-metallic hover:bg-brand-blush/50 text-xs font-bold flex items-center gap-2 justify-center"
                       >
-                        {reloadingWithAI ? (
-                          <div className="animate-spin w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full" />
-                        ) : (
-                          <Sparkles size={14} />
-                        )}
-                        Recarregar com IA
+                        <Upload size={14} />
+                        {imagePreviews.length > 0 ? 'Adicionar mais' : 'Escolher fotos'}
                       </Button>
-                    )}
+                      {imagePreviews.length > 0 && isAIConfigured() && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleReloadWithAI}
+                          disabled={reloadingWithAI}
+                          className="h-10 px-4 rounded-lg border-brand-primary/30 text-brand-primary hover:bg-brand-blush/50 text-xs font-bold flex items-center gap-2 justify-center"
+                        >
+                          {reloadingWithAI ? (
+                            <div className="animate-spin w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full" />
+                          ) : (
+                            <Sparkles size={14} />
+                          )}
+                          Atualizar com IA
+                        </Button>
+                      )}
+                    </div>
                   </div>
+                  {imagePreviews.length > 0 && (
+                    <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+                      {imagePreviews.map((url, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentImageIndex(i)}
+                          className={`w-12 h-12 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all ${i === currentImageIndex ? 'border-brand-primary' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                        >
+                          <img src={url} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Step 2: Category & Stock */}
@@ -639,8 +689,8 @@ export default function InventoryView() {
                       Preview na Loja
                     </div>
                     <div className="flex items-center gap-3">
-                      {imagePreview ? (
-                        <img src={imagePreview} alt={formData.name} className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover border border-brand-nude/30 flex-shrink-0" />
+                      {imagePreviews.length > 0 ? (
+                        <img src={imagePreviews[0]} alt={formData.name} className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover border border-brand-nude/30 flex-shrink-0" />
                       ) : (
                         <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
                           <Package size={18} className="text-gray-300" />
