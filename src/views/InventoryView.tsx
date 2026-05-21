@@ -243,8 +243,8 @@ export default function InventoryView() {
 
       const analysis = await analyzeProductImage(base64Image);
       
-      // Sempre gera descricao a partir do nome (existente ou da IA)
-      const productName = analysis.name || formData.name || '';
+      // Usa nome da IA, ou nome existente no form, ou nome do produto sendo editado
+      const productName = analysis.name || formData.name || editingProduct?.name || '';
       let description = '';
       
       if (productName) {
@@ -305,9 +305,9 @@ export default function InventoryView() {
           finalImageUrls = [...finalImageUrls, ...uploadedUrls];
         }
       }
-      // Fallback: se tem base64 mas nao tem arquivos, tenta converter
-      else if (base64Previews.length > 0 && existingUrls.length === 0 && !editingProduct?.id) {
-        const productId = `prod-${Date.now()}`;
+      // Fallback: se tem base64 mas nao tem arquivos, tenta converter (funciona para novos e editados)
+      else if (base64Previews.length > 0 && existingUrls.length === 0) {
+        const productId = editingProduct?.id || `prod-${Date.now()}`;
         const { uploadImage } = await import('@/src/lib/supabase');
         for (let i = 0; i < base64Previews.length; i++) {
           const response = await fetch(base64Previews[i]);

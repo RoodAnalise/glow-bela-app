@@ -24,7 +24,7 @@ const translateFromDB = (storeName: string, item: any) => {
       sellPrice: Number(item.preco_de_venda || item.sell_price || 0),
       stockQuantity: Number(item.quantidade_em_estoque || item.stock_quantity || 0),
       discountPercent: Number(item.porcentagem_de_desconto || item.discount_percent || 0),
-      imageUrls: item.urls_da_imagem || (item.url_da_imagem ? [item.url_da_imagem] : []) || [],
+      imageUrls: Array.isArray(item.urls_da_imagem) ? item.urls_da_imagem : (item.url_da_imagem ? [item.url_da_imagem] : []),
       createdAt: item.criado_em || item.created_at,
     };
   }
@@ -120,13 +120,14 @@ const translateFromDB = (storeName: string, item: any) => {
 };
 
 const translateToDB = (storeName: string, itemData: any) => {
-  const basePT = { criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString(), url_da_imagem: itemData.imageUrl || '' };
-  const baseEN = { created_at: new Date().toISOString(), updated_at: new Date().toISOString(), image_url: itemData.imageUrl || '' };
+  const basePT = { criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString() };
+  const baseEN = { created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
 
   if (storeName === 'products') {
+    const imageUrls = Array.isArray(itemData.imageUrls) ? itemData.imageUrls : [];
     return {
-      pt: { ...basePT, nome: itemData.name, descricao: itemData.description, categoria: itemData.category, preco_de_custo: itemData.costPrice, porcentagem_de_margem: itemData.markupPercent, preco_de_venda: itemData.sellPrice, quantidade_em_estoque: itemData.stockQuantity, porcentagem_de_desconto: itemData.discountPercent, urls_da_imagem: itemData.imageUrls || [] },
-      en: { ...baseEN, name: itemData.name, description: itemData.description, category: itemData.category, cost_price: itemData.costPrice, markup_percent: itemData.markupPercent, sell_price: itemData.sellPrice, stock_quantity: itemData.stockQuantity, discount_percent: itemData.discountPercent, image_urls: itemData.imageUrls || [] },
+      pt: { ...basePT, nome: itemData.name, descricao: itemData.description, categoria: itemData.category, preco_de_custo: itemData.costPrice, porcentagem_de_margem: itemData.markupPercent, preco_de_venda: itemData.sellPrice, quantidade_em_estoque: itemData.stockQuantity, porcentagem_de_desconto: itemData.discountPercent, urls_da_imagem: imageUrls },
+      en: { ...baseEN, name: itemData.name, description: itemData.description, category: itemData.category, cost_price: itemData.costPrice, markup_percent: itemData.markupPercent, sell_price: itemData.sellPrice, stock_quantity: itemData.stockQuantity, discount_percent: itemData.discountPercent, image_urls: imageUrls },
     };
   }
   if (storeName === 'customers') {
@@ -257,7 +258,7 @@ export const useSupabaseDB = <T extends { id?: string }>(storeName: string) => {
         imageUrl = await uploadImage(imageFile, fileName) || '';
       }
 
-      const translated = translateToDB(storeName, { ...itemData, imageUrl });
+      const translated = translateToDB(storeName, { ...itemData, imageUrl: imageUrl || itemData.imageUrls });
       const cache = tableCache[storeName];
       const tableName = cache?.tableName || primaryTableName;
       const itemToUpdate = cache?.isPT ? translated.pt : translated.en;
